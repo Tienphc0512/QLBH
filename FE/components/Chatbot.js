@@ -8,10 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity
 } from "react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import axios from "axios";
 
-const ChatBotScreen = () => {
+const ChatBot = () => {
   const [input, setInput] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,6 +47,13 @@ const ChatBotScreen = () => {
       style={styles.container}
       behavior={Platform.select({ ios: "padding", android: undefined })}
     >
+              {/* Icon lịch sử ở góc phải */}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 }}>
+        <TouchableOpacity onPress={() => navigation.navigate("Lịch Sử Chatbot")}>
+          <Ionicons name="time-outline" size={28} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>Chat với AI</Text>
 
@@ -65,7 +74,7 @@ const ChatBotScreen = () => {
   );
 };
 
-export default ChatBotScreen;
+export default ChatBot;
 
 const styles = StyleSheet.create({
   container: {

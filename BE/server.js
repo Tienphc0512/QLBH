@@ -241,24 +241,57 @@ app.delete("/api/giohang/:id", verifyToken, async (req, res) => {
     }   
 });
 
+// Tạo hàm dùng lại cho mọi tình huống
+async function taoThongBaoTrangThai(dathang_id, user_id, trangthai) {
+  let noidung = '';
+
+  switch (trangthai) {
+    case 'danggiao':
+      noidung = `Đơn hàng #${dathang_id} đang được giao đến bạn.`;
+      break;
+    case 'hoanthanh':
+      noidung = `Đơn hàng #${dathang_id} đã hoàn thành. Cảm ơn bạn!`;
+      break;
+    case 'dahuy':
+      noidung = `Đơn hàng #${dathang_id} đã bị huỷ.`;
+      break;
+    default:
+      return; // không gửi thông báo cho trạng thái khác
+  }
+
+  await pool.query(
+    "INSERT INTO thongbao (user_id, dathang_id, noidung) VALUES ($1, $2, $3)",
+    [user_id, dathang_id, noidung]
+  );
+}
+
 // đặt hàng
 app.post("/api/dat_hang", verifyToken, async (req, res) => {
   const { items, tongtien } = req.body;
   const user_id = req.userId;
 
   try {
-    const orderResult = await pool.query(
-      "INSERT INTO dathang (user_id, tongtien) VALUES ($1, $2) RETURNING id",
-      [user_id, tongtien]
-    );
-    const dathang_id = orderResult.rows[0].id;
-
-    for (const item of items) {
-     await pool.query(
-  "INSERT INTO chitietdathang (dathang_id, sanpham_id, soluong, dongia) VALUES ($1, $2, $3, $4)",
-  [dathang_id, item.sanpham_id, item.soluong, item.dongia]
+   // Tạo đơn hàng
+const orderResult = await pool.query(
+  "INSERT INTO dathang (user_id, tongtien) VALUES ($1, $2) RETURNING id",
+  [user_id, tongtien]
 );
-    }
+
+const dathang_id = orderResult.rows[0].id;
+
+// Thêm chi tiết đơn hàng
+for (const item of items) {
+  await pool.query(
+    "INSERT INTO chitietdathang (dathang_id, sanpham_id, soluong, dongia) VALUES ($1, $2, $3, $4)",
+    [dathang_id, item.sanpham_id, item.soluong, item.dongia]
+  );
+}
+
+// Gửi thông báo đặt hàng
+await pool.query(
+  "INSERT INTO thongbao (user_id, dathang_id, noidung) VALUES ($1, $2, $3)",
+  [user_id, dathang_id, `Bạn đã đặt hàng thành công. Mã đơn hàng: #${dathang_id}`]
+);
 
     res.status(201).json({ message: "Đặt hàng thành công", dathang_id });
   } catch (err) {
@@ -267,23 +300,103 @@ app.post("/api/dat_hang", verifyToken, async (req, res) => {
   }
 });
 
-// hủy hàng 
-app.delete("/api/huy_don_hang/:id", verifyToken, async (req, res) => {
+// api cập nhật trạng thái đơn hàng
+app.put("/api/donhang/:id/trangthai", verifyToken, async (req, res) => {
   const dathang_id = req.params.id;
+  const { trangthai } = req.body;
+
   try {
+    // Cập nhật trạng thái đơn hàng
     const result = await pool.query(
-      "DELETE FROM dathang WHERE id = $1 AND user_id = $2",
-      [dathang_id, req.userId]
+      "UPDATE dathang SET trangthai = $1 WHERE id = $2 RETURNING user_id",
+      [trangthai, dathang_id]
     );
-    if (result.rowCount === 0) {
+
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
     }
-    res.json({ message: "Đơn hàng đã được hủy" });
+
+    const user_id = result.rows[0].user_id;
+
+    // Tạo thông báo tương ứng
+    await taoThongBaoTrangThai(dathang_id, user_id, trangthai);
+
+    res.json({ message: "Cập nhật trạng thái thành công" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Lỗi khi hủy đơn hàng" });
+    res.status(500).json({ error: "Lỗi cập nhật trạng thái đơn hàng" });
   }
 });
+
+// api huỷ đơn hàng
+app.delete("/api/huy_don_hang/:id", verifyToken, async (req, res) => {
+  const dathang_id = req.params.id;
+  const user_id = req.userId;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Xóa chi tiết đơn hàng trước
+    await client.query("DELETE FROM chitietdathang WHERE dathang_id = $1", [dathang_id]);
+
+    // Xóa đơn hàng
+    const result = await client.query(
+      "DELETE FROM dathang WHERE id = $1 AND user_id = $2",
+      [dathang_id, user_id]
+    );
+
+    if (result.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
+    }
+
+    // Tạo thông báo sau khi xoá thành công
+    await client.query(
+      "INSERT INTO thongbao (user_id, dathang_id, noidung) VALUES ($1, $2, $3)",
+      [user_id, dathang_id, `Bạn đã huỷ đơn hàng #${dathang_id}`]
+    );
+
+    await client.query("COMMIT");
+    res.json({ message: "Đơn hàng đã được huỷ và thông báo đã được gửi" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Lỗi khi huỷ đơn hàng" });
+  } finally {
+    client.release();
+  }
+});
+
+
+// xem thông báo
+app.get("/api/thongbao", verifyToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM thongbao WHERE user_id = $1 ORDER BY created_at DESC",
+      [req.userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Lỗi khi lấy thông báo" });
+  }
+});
+
+// Đánh dấu thông báo là đã đọc
+app.put("/api/thongbao/:id/read", verifyToken, async (req, res) => {
+  try {
+    await pool.query(
+      "UPDATE thongbao SET is_read = TRUE WHERE id = $1 AND user_id = $2",
+      [req.params.id, req.userId]
+    );
+    res.json({ message: "Đã đánh dấu là đã đọc" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Lỗi khi cập nhật thông báo" });
+  }
+});
+
 
 // xem chi tiết đặt hàng
 app.get("/api/chi_tiet_don_hang/:id", verifyToken, async (req, res) => {
@@ -301,6 +414,21 @@ app.get("/api/chi_tiet_don_hang/:id", verifyToken, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Lỗi khi lấy chi tiết đơn hàng" });
   }
+});
+ 
+// xem lịch sử đặt hàng
+app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const result = await pool.query( 
+      "SELECT * FROM lichsudathang WHERE user_id = $1 ORDER BY created_at DESC",
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Lỗi khi lấy lịch sử đặt hàng" });
+  } 
 });
 
 // xem lịch sử hủy đơn hàng 

@@ -9,6 +9,7 @@ chat_tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-2") # Phi-2 là m�
 chat_model = AutoModelForCausalLM.from_pretrained("microsoft/phi-2")
 chat_model.eval()
 
+
 # Load embedding model
 embedding_tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-small") #từ Hugging Face Hub
 embedding_model = AutoModel.from_pretrained("thenlper/gte-small") #(để biểu diễn văn bản thành vector) của nhóm nghiên cứu The NLPers (Viện AI KAIST Hàn Quốc).

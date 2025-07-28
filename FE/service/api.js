@@ -137,3 +137,169 @@ export async function fetchSanPham(name, token) {
   }
 }
 
+// api thêm sản phẩm vào giỏ hàng
+export async function addToCart(item, token) {  
+  try {
+    const response = await axios.post(`${BASE_URL}/api/giohang`, {
+      sanpham_id: item.id,
+      soluong: item.soluong
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Thêm sản phẩm vào giỏ hàng thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+
+//api xóa sản phẩm khỏi giỏ hàng
+export async function removeFromCart(itemId, token) {
+  try {
+    const response = await axios.delete(`${BASE_URL}/api/giohang/${itemId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Xóa sản phẩm khỏi giỏ hàng thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+
+//xem lịch sử đặt hàng
+export async function fetchOrderHistory(token) {
+  try {
+    const response = await axios.get(`${BASE_URL}/api//api/lich_su_dat_hang`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Lấy lịch sử đặt hàng thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+
+//api dặt hàng
+export async function placeOrder(orderDetails, token) { 
+  try {
+    const response = await axios.post(`${BASE_URL}/api/dat_hang`, orderDetails, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Đặt hàng thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+
+// api xem chitiet đặt hàng
+export async function fetchOrderDetails(orderId, token) {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/chi_tiet_don_hang/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Lấy chi tiết đặt hàng thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+
+// api xem thông báo
+export async function fetchNotifications(token) {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/thong_bao`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      } 
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Lấy thông báo thất bại');
+    }
+    else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+} 
+
+// api đánh dấu là đã đọc thông báo 
+export async function markNotificationAsRead(notificationId, token) {
+  try {
+    const response = await axios.put(`${BASE_URL}/api/thong_bao/${notificationId}/read`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Đánh dấu thông báo thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+
+//api huỷ đơn hàng
+export async function cancelOrder(orderId, token) {
+  try {
+    const response = await axios.delete(`${BASE_URL}/api/huy_don_hang/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Huỷ đơn hàng thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+// aoi xem lịch sử tìm kiếm = ai
+export async function fetchChatHistoryAI(token) {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/lich_su_tim_kiem`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Lấy lịch sử chat thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}

@@ -48,12 +48,19 @@ const TrangChu = ({ navigation }) => {
   };
 
   const handleAddToCart = (item) => {
-    addToCart(item);
+     if (soluong > item.soluong) {
+          setError("Số lượng vượt quá tồn kho!");
+          return;
+        }
+        addToCart({ ...item, soluong });
+    setSoluong(1); // Reset quantity after adding to cart
+    setError('');
+    // addToCart(item);
     ToastAndroid.show(`${item.ten} đã được thêm vào giỏ`, ToastAndroid.SHORT);
   };
 
   const handleOrderNow = (item) => {
-    navigation.navigate("DatHang", { item });
+    navigation.navigate("Đặt hàng", { item });
   };
 
   return (
@@ -81,7 +88,7 @@ const TrangChu = ({ navigation }) => {
         onChangeText={handleSearch}
       />
 
-      {/* DANH MỤC */}
+    {/* DANH MỤC - lướt ngang */}
       <Text style={styles.heading}>Danh mục</Text>
       <FlatList
         horizontal
@@ -93,39 +100,48 @@ const TrangChu = ({ navigation }) => {
           </TouchableOpacity>
         )}
         showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingRight: 10 }}
       />
 
-      {/* SẢN PHẨM */}
+      {/* SẢN PHẨM - lưới 3 cột, lướt dọc */}
       <Text style={styles.heading}>Sản phẩm nổi bật</Text>
-      <ScrollView>
-        <View style={styles.productsWrapper}>
-          {(Array.isArray(filteredSanPham) ? filteredSanPham : []).map((sp) => (
-            <View key={sp.id} style={styles.productCard}>
-              <Image source={{ uri: sp.hinhanh }} style={styles.productImage} />
-              <Text style={styles.productName}>{sp.ten}</Text>
-              <Text style={styles.productPrice}>{sp.gia.toLocaleString()}₫</Text>
-
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity
-                  style={styles.cartButton}
-                  onPress={() => handleAddToCart(sp)}
-                >
-                  <Text style={styles.buttonText}>🛒 Thêm</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.orderButton}
-                  onPress={() => handleOrderNow(sp)}
-                >
-                  <Text style={styles.buttonText}>Mua ngay</Text>
-                </TouchableOpacity>
-              </View>
+      <FlatList
+        data={filteredSanPham}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={3}
+        renderItem={({ item: sp }) => (
+          <View style={styles.productCard}>
+            <Image source={{ uri: sp.hinhanh }} style={styles.productImage} />
+            <Text style={styles.productName}>{sp.ten}</Text>
+            <Text style={styles.productPrice}>{sp.gia.toLocaleString()}₫</Text>
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity
+                style={styles.cartButton}
+                onPress={() => handleAddToCart(sp)}
+              >
+                <Text style={styles.buttonText}>🛒 Thêm</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.orderButton}
+                onPress={() => handleOrderNow(sp)}
+              >
+                <Text style={styles.buttonText}>Mua ngay</Text>
+              </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      </ScrollView>
+            <TouchableOpacity
+              style={[styles.orderButton, { backgroundColor: '#1976d2', marginTop: 5 }]}
+              onPress={() => navigation.navigate("Chi tiết sản phẩm", { item: sp })}
+            >
+              <Text style={styles.buttonText}>Chi tiết</Text>
+            </TouchableOpacity>
+          </View>
+           )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.productsWrapper}
+      />
     </View>
-  );
-};
+  )
+}
 
 export default TrangChu;
 
