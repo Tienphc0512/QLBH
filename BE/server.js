@@ -25,17 +25,25 @@ const pool = new Pool({
 });
 
 // Middleware xác thực JWT (để bv cho các api cần đăng nhập thì mới truy cạp đc)
-function verifyToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(' ')[1]; // "Bearer abc" → lấy abc
-  if (!token) return res.status(403).send("No token provided");
-//xài jsonwebtoken để xác thực token
-  jwt.verify(token, SECRET_KEY, (err, decoded) => {
-    if (err) return res.status(401).send("Invalid token");
-    req.userId = decoded.id; // gán userId vào req để dùng sau này
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Token không hợp lệ" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY); // phải đúng SECRET_KEY
+    req.user = decoded;
     next();
-  });
-}
+  } catch (error) {
+    return res.status(401).json({ error: "Token không hợp lệ" });
+  }
+};
+
+
 
 // Đăng ký
 app.post("/api/dangky", async (req, res) => {
@@ -153,15 +161,39 @@ app.get("/api/all_users", verifyToken, async (req, res) => {
 });
 
 //xem tất cả sản phẩm ở home
-app.get("/api/sanpham", verifyToken, async (req, res) => {
+app.get('/api/sanpham', verifyToken, async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM sanpham");
+    const result = await pool.query(`
+      SELECT DISTINCT ON (sp.id)
+        sp.id,
+        sp.ten AS ten_san_pham,
+        sp.gia,
+        ha.image_path AS anh_dai_dien
+      FROM sanpham sp
+      JOIN hinhanh_sanpham ha ON sp.id = ha.sanpham_id
+      ORDER BY sp.id, ha.id;
+    `);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Lỗi khi lấy sản phẩm" });
+    res.status(500).json({ error: 'Lỗi lấy dữ liệu sản phẩm' });
   }
 });
+
+
+// //  API trả về danh sách ảnh cho sản phẩm dựa trên id
+// app.get('/api/sanpham/:id/hinhanh', async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const result = await pool.query(
+//       'SELECT image_path FROM hinhanh_sanpham WHERE sanpham_id = $1',
+//       [id]
+//     );
+//     res.json(result.rows); // ví dụ: [ { image_path: 'https://example.com/uploads/sanpham1_1.jpg' }, ... ]
+//   } catch (err) {
+//     res.status(500).json({ error: 'Lỗi lấy dữ liệu hình ảnh' });
+//   }
+// });
 
 // xem danh mục để link qua sản phẩm theo danh mục
 app.get("/api/danhmuc", verifyToken, async (req, res) => {
@@ -465,7 +497,7 @@ app.get("/api/lich_su_tim_kiem", verifyToken, async (req, res) => {
 });
 
 // Gọi Flask API để lấy embedding
-app.post("/api/embed", async (req, res) => {
+app.post("/api/embed", verifyToken, async (req, res) => {
   try {
     const response = await axios.post("http://localhost:5000/embed", {
       text: req.body.text,
@@ -478,7 +510,7 @@ app.post("/api/embed", async (req, res) => {
 });
 
 // Gọi Flask API để lấy phản hồi chatbot
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", verifyToken, async (req, res) => {
   try {
     const response = await axios.post("http://localhost:5000/chat", {
       prompt: req.body.prompt,

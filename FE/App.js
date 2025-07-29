@@ -3,15 +3,18 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "react-native";
 import { AuthProvider, useAuth } from "./context/Auth";
-import { CartProvider } from "./context/CartContext"; // đường dẫn đúng
+import { CartProvider } from "./context/CartContext"; 
 
 import TrangChu from "./components/TrangChu";
-// import GioHang from "./components/GioHang";
-// import DonHang from "./components/DatHang";
+import GioHang from "./components/GioHang";
+import DonHang from "./components/DatHang";
 import Chatbot from "./components/Chatbot";
 import TaiKhoan from "./components/TaiKhoan";
 import DangNhap from "./components/DangNhap";
 import DangKy from "./components/DangKy";
+// import Chiietsanpham from "./components/Chitietsanpham";
+// import Danhmuc from "./components/Danhmuc";
+// import Sanpham from "./components/Sanpham"; 
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -33,10 +36,13 @@ function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }}>
       <Tab.Screen name="Trang chủ" component={TrangChu} />
-      {/* <Tab.Screen name="Giỏ hàng" component={GioHang} />
-      <Tab.Screen name="Đơn hàng" component={DonHang} /> */}
+      <Tab.Screen name="Giỏ hàng" component={GioHang} />
+      <Tab.Screen name="Đơn hàng" component={DonHang} />
       <Tab.Screen name="Chatbot" component={Chatbot} />
       <Tab.Screen name="Tài khoản" component={TaiKhoan} />
+      {/* <Tab.Screen name="Danh mục" component={Danhmuc} />
+      <Tab.Screen name="Sản phẩm" component={Sanpham} />  
+      <Tab.Screen name="Chi tiết sản phẩm" component={Chiietsanpham} /> */}
     </Tab.Navigator>
   );
 }

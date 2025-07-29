@@ -1,68 +1,144 @@
 import React, { useEffect, useState } from 'react';
-import { fetchTaiKhoan, updateTaiKhoan } from '../service/api'; // Đổi tên file api nếu cần
-import { Button, Input, Form, message, Spin } from 'antd';
+import { View, TextInput, Text, Button, ActivityIndicator, StyleSheet, Alert, ScrollView } from 'react-native';
+import { fetchTaiKhoan, updateTaiKhoan } from '../service/api';
+import { useAuth } from '../context/Auth';
 
-const TaiKhoan = ({ token }) => {
-    const [form] = Form.useForm();
+const TaiKhoan = () => {
+    const [formData, setFormData] = useState({
+        hoten: '',
+        sdt: '',
+        email: '',
+        matkhau: '',
+        diachi: '',
+    });
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
+    const { logout, token } = useAuth();
+
 
     useEffect(() => {
         const getTaiKhoan = async () => {
             setLoading(true);
             try {
                 const data = await fetchTaiKhoan(token);
-                form.setFieldsValue(data);
+                setFormData(data);
             } catch (err) {
-                message.error(err.message);
+                Alert.alert('Lỗi', err.message);
             }
             setLoading(false);
         };
         getTaiKhoan();
-    }, [token, form]);
+    }, [token]);
 
-    const onFinish = async (values) => {
+    const handleChange = (key, value) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
+    const onSubmit = async () => {
         setUpdating(true);
         try {
-            await updateTaiKhoan(values, token);
-            message.success('Cập nhật tài khoản thành công');
+            await updateTaiKhoan(formData, token);
+            Alert.alert('Thành công', 'Cập nhật tài khoản thành công');
         } catch (err) {
-            message.error(err.message);
+            Alert.alert('Lỗi', err.message);
         }
         setUpdating(false);
     };
 
+    const handleLogout = () => {
+        logout();
+        Alert.alert('Đăng xuất', 'Bạn đã đăng xuất thành công');
+    };
+
+    if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
+
     return (
-        <Spin spinning={loading}>
-            <Form
-                form={form}
-                layout="vertical"
-                onFinish={onFinish}
-                style={{ maxWidth: 400, margin: '0 auto', marginTop: 32 }}
-            >
-                <Form.Item label="Họ tên" name="hoten" rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
-                    <Input />
-                </Form.Item>
-                <Form.Item label="Số điện thoại" name="sdt" rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}>
-                    <Input />
-                </Form.Item>
-                <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}>
-                    <Input />
-                </Form.Item>
-                <Form.Item label="Mật khẩu" name="matkhau" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}>
-                    <Input.Password />
-                </Form.Item>
-                <Form.Item label="Địa chỉ" name="diachi">
-                    <Input />
-                </Form.Item>
-                <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={updating} block>
-                        Cập nhật
-                    </Button>
-                </Form.Item>
-            </Form>
-        </Spin>
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.label}>Họ tên</Text>
+            <TextInput
+                style={styles.input}
+                value={formData.hoten}
+                onChangeText={text => handleChange('hoten', text)}
+                placeholder="Nhập họ tên"
+            />
+
+            <Text style={styles.label}>Số điện thoại</Text>
+            <TextInput
+                style={styles.input}
+                value={formData.sdt}
+                onChangeText={text => handleChange('sdt', text)}
+                placeholder="Nhập số điện thoại"
+                keyboardType="phone-pad"
+            />
+
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+                style={styles.input}
+                value={formData.email}
+                onChangeText={text => handleChange('email', text)}
+                placeholder="Nhập email"
+                keyboardType="email-address"
+            />
+
+            <Text style={styles.label}>Mật khẩu</Text>
+            <TextInput
+                style={styles.input}
+                value={formData.matkhau}
+                onChangeText={text => handleChange('matkhau', text)}
+                placeholder="Nhập mật khẩu"
+                secureTextEntry
+            />
+
+            <Text style={styles.label}>Địa chỉ</Text>
+            <TextInput
+                style={styles.input}
+                value={formData.diachi}
+                onChangeText={text => handleChange('diachi', text)}
+                placeholder="Nhập địa chỉ"
+            />
+
+            <View style={styles.buttonContainer}>
+                <Button
+                    title={updating ? 'Đang cập nhật...' : 'Cập nhật tài khoản'}
+                    onPress={onSubmit}
+                    color="#007bff"
+                    disabled={updating}
+                />
+            </View>
+
+            <View style={styles.logoutContainer}>
+                <Button
+                    title="Đăng xuất"
+                    onPress={handleLogout}
+                    color="#dc3545"
+                />
+            </View>
+        </ScrollView>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        padding: 20,
+    },
+    label: {
+        fontWeight: 'bold',
+        marginTop: 15,
+        marginBottom: 5,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        padding: 10,
+        borderRadius: 5,
+    },
+    buttonContainer: {
+        marginTop: 25,
+        marginBottom: 10,
+    },
+    logoutContainer: {
+        marginTop: 10,
+    },
+});
 
 export default TaiKhoan;

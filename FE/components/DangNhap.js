@@ -13,26 +13,32 @@ export default function DangNhap() {
   const navigation = useNavigation();
 
   const handleLogin = async () => {
-    setLoading(true);
-    setError('');
-    if (!username || !password) {
-      Alert.alert('Vui lòng điền đầy đủ thông tin');
-      return;
-    }
-    try {
-      const data = await loginUser(username, password);
+  setLoading(true);
+  setError('');
 
-      await login(data.token, data.userId);
+  if (!username || !password) {
+    Alert.alert('Vui lòng điền đầy đủ thông tin');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const data = await loginUser(username, password);
+
+    // Gọi login để lưu token & userId vào AsyncStorage
+    await login(data.token, data.userId);
+
+    // Log token để kiểm tra
+    console.log('Đăng nhập thành công. Token:', data.token);
 
 
-    }
-    catch (error) {
-      setError(error.response?.data?.message || 'Đăng nhập thất bại');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    setError(error.message || 'Đăng nhập thất bại');
+    console.error('Lỗi đăng nhập:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   return (

@@ -51,7 +51,7 @@ const Chitietsanpham = ({ route, navigation }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Image source={{ uri: item.hinhanh }} style={styles.image} />
+      <Image source={{ uri: item.image_path }} style={styles.image} />
       <Text style={styles.name}>{item.ten}</Text>
       <Text style={styles.price}>{item.gia.toLocaleString()}₫</Text>
       <Text style={styles.desc}>{item.mota}</Text>

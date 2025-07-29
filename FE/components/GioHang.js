@@ -1,49 +1,84 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useCart } from "../context/CartContext";
-import { removeFromCart as removeFromCartAPI } from "../services/api"; 
-import { Button } from "@/components/ui/button"; 
-import { toast } from "react-toastify"; 
+import { removeFromCart as removeFromCartAPI } from "../service/api";
 
 const GioHang = ({ token }) => {
   const { cartItems, removeFromCart } = useCart();
-  const [loading, setLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState(null);
 
   const handleRemove = async (itemId) => {
     try {
-      setLoading(true);
-      await removeFromCartAPI(itemId, token); // gọi API xoá khỏi server
-      removeFromCart(itemId); // xoá khỏi local state
-      toast.success("Đã xoá sản phẩm khỏi giỏ hàng");
+      setLoadingId(itemId);
+      await removeFromCartAPI(itemId, token);
+      removeFromCart(itemId);
     } catch (error) {
-      toast.error(error.message);
+      alert(error.message);
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
+  const renderItem = ({ item }) => (
+    <View style={styles.itemContainer}>
+      <View>
+        <Text style={styles.itemName}>{item.ten}</Text>
+        <Text>Số lượng: {item.soluong}</Text>
+        <Text>Giá: {item.gia.toLocaleString()} VNĐ</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.removeBtn}
+        disabled={loadingId === item.id}
+        onPress={() => handleRemove(item.id)}
+      >
+        {loadingId === item.id ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.removeBtnText}>Xoá</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">🛒 Giỏ hàng của bạn</h2>
+    <View style={styles.container}>
+      <Text style={styles.title}>Giỏ hàng của bạn</Text>
       {cartItems.length === 0 ? (
-        <p>Chưa có sản phẩm nào trong giỏ hàng.</p>
+        <Text>Chưa có sản phẩm nào trong giỏ hàng.</Text>
       ) : (
-        <ul className="space-y-4">
-          {cartItems.map((item) => (
-            <li key={item.id} className="border p-3 rounded flex justify-between items-center">
-              <div>
-                <p className="font-medium">{item.ten}</p>
-                <p>Số lượng: {item.soluong}</p>
-                <p>Giá: {item.gia.toLocaleString()} VNĐ</p>
-              </div>
-              <Button variant="destructive" disabled={loading} onClick={() => handleRemove(item.id)}>
-                Xoá
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <FlatList
+          data={cartItems}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
       )}
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
+  title: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
+  itemContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: "#fafafa",
+  },
+  itemName: { fontWeight: "bold", fontSize: 16, marginBottom: 4 },
+  removeBtn: {
+    backgroundColor: "#e53935",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  removeBtnText: { color: "#fff", fontWeight: "bold" },
+});
 
 export default GioHang;

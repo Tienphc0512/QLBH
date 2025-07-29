@@ -5,13 +5,15 @@ import torch
 app = Flask(__name__)
 
 # Load LLM nhỏ (chatbot thông minh)
-chat_tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-2") # Phi-2 là mô hình ngôn ngữ LLM nhỏ của Microsoft
-chat_model = AutoModelForCausalLM.from_pretrained("microsoft/phi-2")
+chat_tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-125M")
+chat_tokenizer.pad_token = chat_tokenizer.eos_token
+chat_model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-125M")
 chat_model.eval()
+# LLM nhỏ này là GPT-Neo 125M, một mô hình ngôn ngữ mã nguồn mở được phát triển bởi EleutherAI.
 
 
 # Load embedding model
-embedding_tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-small") #từ Hugging Face Hub
+embedding_tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-small") #từ nền tảng Hugging Face Hub
 embedding_model = AutoModel.from_pretrained("thenlper/gte-small") #(để biểu diễn văn bản thành vector) của nhóm nghiên cứu The NLPers (Viện AI KAIST Hàn Quốc).
 
 # Generate embedding
@@ -25,8 +27,9 @@ def get_embedding(text):
 # Chatbot trả lời thông minh
 def generate_response(prompt):
     inputs = chat_tokenizer(prompt, return_tensors="pt")
-    outputs = chat_model.generate(**inputs, max_length=100)
+    outputs = chat_model.generate(**inputs, max_length=100, pad_token_id=chat_tokenizer.eos_token_id)
     return chat_tokenizer.decode(outputs[0], skip_special_tokens=True)
+
 
 @app.route("/embed", methods=["POST"])
 def embed():

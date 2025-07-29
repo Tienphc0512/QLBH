@@ -13,6 +13,7 @@ import {
 import { fetchDanhMuc, fetchSanPham } from '../service/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/Auth';
 
 const TrangChu = ({ navigation }) => {
   const [danhmuc, setDanhmuc] = useState([]);
@@ -20,22 +21,26 @@ const TrangChu = ({ navigation }) => {
   const [filteredSanPham, setFilteredSanPham] = useState([]);
   const [search, setSearch] = useState('');
   const { addToCart } = useCart();
+  const { token } = useAuth();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const danhmucRes = await fetchDanhMuc();
-        setDanhmuc(danhmucRes.data);
 
-        const sanphamRes = await fetchSanPham();
-        setSanpham(sanphamRes.data);
-        setFilteredSanPham(sanphamRes.data);
-      } catch (err) {
-        console.error('Lỗi khi load dữ liệu:', err);
-      }
-    };
-    fetchData();
-  }, []);
+ useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const danhmucRes = await fetchDanhMuc('', token); 
+      setDanhmuc(danhmucRes.data);
+
+      const sanphamRes = await fetchSanPham('', token); 
+      setSanpham(sanphamRes.data);
+      setFilteredSanPham(sanphamRes.data);
+    } catch (err) {
+      console.error('Lỗi khi load dữ liệu:', err.response?.data || err.message);
+    }
+  };
+  if (token) fetchData(); // đảm bảo token có rồi mới gọi
+}, [token]); // depend on token để re-run khi token sẵn sàng
+
+
 
   const handleSearch = (text) => {
     setSearch(text);
@@ -111,7 +116,7 @@ const TrangChu = ({ navigation }) => {
         numColumns={3}
         renderItem={({ item: sp }) => (
           <View style={styles.productCard}>
-            <Image source={{ uri: sp.hinhanh }} style={styles.productImage} />
+            <Image source={{ uri: sp.anh_dai_dien }} style={styles.productImage} />
             <Text style={styles.productName}>{sp.ten}</Text>
             <Text style={styles.productPrice}>{sp.gia.toLocaleString()}₫</Text>
             <View style={styles.buttonGroup}>
@@ -119,7 +124,7 @@ const TrangChu = ({ navigation }) => {
                 style={styles.cartButton}
                 onPress={() => handleAddToCart(sp)}
               >
-                <Text style={styles.buttonText}>🛒 Thêm</Text>
+                <Text style={styles.buttonText}>Thêm</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.orderButton}

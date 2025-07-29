@@ -15,7 +15,7 @@ import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan } from '../se
 import { Picker } from '@react-native-picker/picker';
 
 
-export default function DatHangScreen({ route, token }) {
+export default function DatHang({ route, token }) {
   const [orderDetails, setOrderDetails] = useState({
     items: [],
     tongtien: 0,
@@ -27,7 +27,7 @@ export default function DatHangScreen({ route, token }) {
   const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({ ten: '', sdt: '', diachi: '' });
   const [showModal, setShowModal] = useState(false);
-const route = useRoute();
+  const [error, setError] = useState('');
   const selectedItem = route?.params?.item;
 
   useEffect(() => {
@@ -131,8 +131,6 @@ const route = useRoute();
       <Text>Họ tên: {userInfo.ten}</Text>
       <Text>SĐT: {userInfo.sdt}</Text>
       <Text>Địa chỉ: {userInfo.diachi}</Text>
-
-import { Picker } from '@react-native-picker/picker'; // nhớ import đúng thư viện
 
 <Text>Số lượng:</Text>
 <Picker
