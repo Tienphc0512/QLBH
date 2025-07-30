@@ -5,11 +5,10 @@ import torch
 app = Flask(__name__)
 
 # Load LLM nhỏ (chatbot thông minh)
-chat_tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-125M")
-chat_tokenizer.pad_token = chat_tokenizer.eos_token
-chat_model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-125M")
+chat_tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
+chat_model = AutoModelForCausalLM.from_pretrained("HuggingFaceH4/zephyr-7b-beta", device_map="auto", torch_dtype=torch.float16)
 chat_model.eval()
-# LLM nhỏ này là GPT-Neo 125M, một mô hình ngôn ngữ mã nguồn mở được phát triển bởi EleutherAI.
+ 
 
 
 # Load embedding model
@@ -26,9 +25,15 @@ def get_embedding(text):
 
 # Chatbot trả lời thông minh
 def generate_response(prompt):
-    inputs = chat_tokenizer(prompt, return_tensors="pt")
+    # prompt template giúp model hiểu cần phản hồi như một assistant
+    full_prompt = f"User: {prompt}\nAssistant:"
+    inputs = chat_tokenizer(full_prompt, return_tensors="pt")
     outputs = chat_model.generate(**inputs, max_length=100, pad_token_id=chat_tokenizer.eos_token_id)
-    return chat_tokenizer.decode(outputs[0], skip_special_tokens=True)
+    response = chat_tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    # Cắt phần prompt nếu model lặp lại
+    return response.replace(full_prompt, "").strip()
+
 
 
 @app.route("/embed", methods=["POST"])

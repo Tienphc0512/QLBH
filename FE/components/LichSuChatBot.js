@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { fetchChatHistoryAI } from '../service/api'; 
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, SafeAreaView } from 'react-native';
+import { useAuth } from '../context/Auth';
 
-export default function LichSuChatBot({ token }) {
+export default function LichSuChatBot() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const { token } = useAuth();
 
     useEffect(() => {
         const loadHistory = async () => {

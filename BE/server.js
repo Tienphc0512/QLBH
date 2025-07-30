@@ -35,13 +35,16 @@ const verifyToken = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, SECRET_KEY); // phải đúng SECRET_KEY
+    const decoded = jwt.verify(token, SECRET_KEY); // giải mã token
     req.user = decoded;
+    req.userId = decoded.id; // ⚠️ THÊM DÒNG NÀY
     next();
   } catch (error) {
     return res.status(401).json({ error: "Token không hợp lệ" });
   }
 };
+
+
 
 
 

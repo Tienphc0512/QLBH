@@ -22,23 +22,25 @@ const TrangChu = ({ navigation }) => {
   const [search, setSearch] = useState('');
   const { addToCart } = useCart();
   const { token } = useAuth();
+  const [soluong, setSoluong] = useState(1);
 
 
- useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const danhmucRes = await fetchDanhMuc('', token); 
-      setDanhmuc(danhmucRes.data);
 
-      const sanphamRes = await fetchSanPham('', token); 
-      setSanpham(sanphamRes.data);
-      setFilteredSanPham(sanphamRes.data);
-    } catch (err) {
-      console.error('Lỗi khi load dữ liệu:', err.response?.data || err.message);
-    }
-  };
-  if (token) fetchData(); // đảm bảo token có rồi mới gọi
-}, [token]); // depend on token để re-run khi token sẵn sàng
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const danhmucRes = await fetchDanhMuc('', token);
+        setDanhmuc(danhmucRes.data);
+
+        const sanphamRes = await fetchSanPham('', token);
+        setSanpham(sanphamRes.data);
+        setFilteredSanPham(sanphamRes.data);
+      } catch (err) {
+        console.error('Lỗi khi load dữ liệu:', err.response?.data || err.message);
+      }
+    };
+    if (token) fetchData(); // đảm bảo token có rồi mới gọi
+  }, [token]); // depend on token để re-run khi token sẵn sàng
 
 
 
@@ -53,16 +55,15 @@ const TrangChu = ({ navigation }) => {
   };
 
   const handleAddToCart = (item) => {
-     if (soluong > item.soluong) {
-          setError("Số lượng vượt quá tồn kho!");
-          return;
-        }
-        addToCart({ ...item, soluong });
-    setSoluong(1); // Reset quantity after adding to cart
-    setError('');
-    // addToCart(item);
+    const soluong = soluongState[item.id] || 1;
+    if (soluong > item.soluong) {
+      setError("Số lượng vượt quá tồn kho!");
+      return;
+    }
+    addToCart({ ...item, soluong });
     ToastAndroid.show(`${item.ten} đã được thêm vào giỏ`, ToastAndroid.SHORT);
   };
+
 
   const handleOrderNow = (item) => {
     navigation.navigate("Đặt hàng", { item });
@@ -93,7 +94,7 @@ const TrangChu = ({ navigation }) => {
         onChangeText={handleSearch}
       />
 
-    {/* DANH MỤC - lướt ngang */}
+      {/* DANH MỤC - lướt ngang */}
       <Text style={styles.heading}>Danh mục</Text>
       <FlatList
         horizontal
@@ -116,9 +117,21 @@ const TrangChu = ({ navigation }) => {
         numColumns={3}
         renderItem={({ item: sp }) => (
           <View style={styles.productCard}>
-            <Image source={{ uri: sp.anh_dai_dien }} style={styles.productImage} />
-            <Text style={styles.productName}>{sp.ten}</Text>
+            <Image source={{ uri: sp.anh_dai_dien || 'https://via.placeholder.com/100' }}
+              style={styles.productImage} />
+            <Text style={styles.productName} numberOfLines={2}>{sp.ten}</Text>
             <Text style={styles.productPrice}>{sp.gia.toLocaleString()}₫</Text>
+            {/* Nhập số lượng */}
+            <TextInput
+              style={styles.quantityInput}
+              keyboardType="numeric"
+              value={String(soluongState[sp.id] || 1)}
+              onChangeText={(text) => {
+                const newValue = parseInt(text) || 1;
+                setSoluongState((prev) => ({ ...prev, [sp.id]: newValue }));
+              }}
+            />
+
             <View style={styles.buttonGroup}>
               <TouchableOpacity
                 style={styles.cartButton}
@@ -140,7 +153,7 @@ const TrangChu = ({ navigation }) => {
               <Text style={styles.buttonText}>Chi tiết</Text>
             </TouchableOpacity>
           </View>
-           )}
+        )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.productsWrapper}
       />
@@ -253,4 +266,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  quantityInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    width: 60,
+    textAlign: 'center',
+    marginVertical: 5,
+  }
+
 });

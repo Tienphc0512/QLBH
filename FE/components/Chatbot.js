@@ -12,26 +12,32 @@ import {
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import axios from "axios";
+import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../context/Auth";
 
 const ChatBot = () => {
   const [input, setInput] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+const { token } = useAuth();
 
-  const handleSend = async () => {
+   const handleSend = async () => {
     if (!input.trim()) return;
 
     setLoading(true);
-    setResponse(""); // reset phản hồi
+    setResponse("");
 
     try {
-      // 1. Gọi API /api/embed
-      await axios.post("http://localhost:5000/embed", { text: input });
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`, // GỬI TOKEN VÀO ĐÂY
+        },
+      };
 
-      // 2. Gọi tiếp API /api/chat
-      const res = await axios.post("http://localhost:5000/chat", {
-        prompt: input,
-      });
+      await axios.post("http://192.168.100.7:3000/api/embed", { text: input }, config);
+
+      const res = await axios.post("http://192.168.100.7:3000/api/chat", { prompt: input }, config);
 
       setResponse(res.data.reply || "Không có phản hồi từ chatbot.");
     } catch (error) {

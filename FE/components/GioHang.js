@@ -1,11 +1,34 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { useCart } from "../context/CartContext";
-import { removeFromCart as removeFromCartAPI } from "../service/api";
+import { removeFromCart as removeFromCartAPI, placeOrderAPI } from "../service/api";
+import { useAuth } from "../context/Auth";
+import { useNavigation } from "@react-navigation/native";
+import Checkbox from "expo-checkbox"; // Dùng checkbox từ expo, hoặc thay bằng bất kỳ lib nào bạn dùng
 
-const GioHang = ({ token }) => {
+const GioHang = () => {
   const { cartItems, removeFromCart } = useCart();
   const [loadingId, setLoadingId] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const { token } = useAuth();
+  const navigation = useNavigation();
+
+  const toggleSelect = (itemId) => {
+    setSelectedItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
 
   const handleRemove = async (itemId) => {
     try {
@@ -19,9 +42,28 @@ const GioHang = ({ token }) => {
     }
   };
 
+  const handlePlaceOrder = () => {
+  if (selectedItems.length === 0) {
+    Alert.alert("Chưa chọn sản phẩm nào", "Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng.");
+    return;
+  }
+
+  const selectedProducts = cartItems.filter((item) =>
+    selectedItems.includes(item.id)
+  );
+
+  navigation.navigate("Đặt hàng", { products: selectedProducts });
+};
+
+
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
-      <View>
+      <Checkbox
+        value={selectedItems.includes(item.id)}
+        onValueChange={() => toggleSelect(item.id)}
+        style={styles.checkbox}
+      />
+      <View style={{ flex: 1 }}>
         <Text style={styles.itemName}>{item.ten}</Text>
         <Text>Số lượng: {item.soluong}</Text>
         <Text>Giá: {item.gia.toLocaleString()} VNĐ</Text>
@@ -46,12 +88,25 @@ const GioHang = ({ token }) => {
       {cartItems.length === 0 ? (
         <Text>Chưa có sản phẩm nào trong giỏ hàng.</Text>
       ) : (
-        <FlatList
-          data={cartItems}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
+        <>
+          <FlatList
+            data={cartItems}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          />
+          <TouchableOpacity
+            style={styles.orderBtn}
+            onPress={handlePlaceOrder}
+            disabled={placingOrder}
+          >
+            {placingOrder ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.orderBtnText}>Đặt hàng</Text>
+            )}
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );
@@ -62,7 +117,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
   itemContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#ddd",
@@ -75,10 +129,25 @@ const styles = StyleSheet.create({
   removeBtn: {
     backgroundColor: "#e53935",
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 6,
   },
   removeBtnText: { color: "#fff", fontWeight: "bold" },
+  checkbox: {
+    marginRight: 12,
+  },
+  orderBtn: {
+    backgroundColor: "#2196F3",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  orderBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });
 
 export default GioHang;

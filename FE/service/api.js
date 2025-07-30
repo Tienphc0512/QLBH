@@ -202,7 +202,8 @@ export async function placeOrder(orderDetails, token) {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
-      }
+      },
+      body: JSON.stringify({ products }), // cấu trúc gửi về server
     });
     return response.data;
   } catch (error) {

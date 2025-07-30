@@ -85,7 +85,7 @@ const TaiKhoan = () => {
                 style={styles.input}
                 value={formData.matkhau}
                 onChangeText={text => handleChange('matkhau', text)}
-                placeholder="Nhập mật khẩu"
+                placeholder="(Mật khẩu đã được ẩn) Nhập mật khẩu"
                 secureTextEntry
             />
 

@@ -3,18 +3,24 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "react-native";
 import { AuthProvider, useAuth } from "./context/Auth";
-import { CartProvider } from "./context/CartContext"; 
+import { CartProvider } from "./context/CartContext";
 
 import TrangChu from "./components/TrangChu";
 import GioHang from "./components/GioHang";
 import DonHang from "./components/DatHang";
 import Chatbot from "./components/Chatbot";
 import TaiKhoan from "./components/TaiKhoan";
+
 import DangNhap from "./components/DangNhap";
 import DangKy from "./components/DangKy";
-// import Chiietsanpham from "./components/Chitietsanpham";
-// import Danhmuc from "./components/Danhmuc";
-// import Sanpham from "./components/Sanpham"; 
+
+import Chitietsanpham from "./components/Chitietsanpham";
+import Danhmuc from "./components/Danhmuc";
+import Sanpham from "./components/Sanpham";
+import LichSuChatBot from "./components/LichSuChatBot";
+import TimKiem from "./components/TimKiem"; 
+import ThongBao from "./components/ThongBao";
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,7 +37,7 @@ const AppTheme = {
   },
 };
 
-// Tab sau khi đăng nhập
+// Tabs sau khi đăng nhập
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }}>
@@ -40,9 +46,6 @@ function MainTabs() {
       <Tab.Screen name="Đơn hàng" component={DonHang} />
       <Tab.Screen name="Chatbot" component={Chatbot} />
       <Tab.Screen name="Tài khoản" component={TaiKhoan} />
-      {/* <Tab.Screen name="Danh mục" component={Danhmuc} />
-      <Tab.Screen name="Sản phẩm" component={Sanpham} />  
-      <Tab.Screen name="Chi tiết sản phẩm" component={Chiietsanpham} /> */}
     </Tab.Navigator>
   );
 }
@@ -72,7 +75,26 @@ function MainNavigator() {
       }}
     >
       {token ? (
-        <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+        <>
+          <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+          <Stack.Screen name="DanhMuc" component={Danhmuc} options={{ title: "Danh mục" }} />
+          <Stack.Screen
+            name="SanPham"
+            component={Sanpham}
+            options={({ route }) => ({
+              title: route.params?.danhmucTen || 'Sản phẩm',
+            })}
+          />
+          <Stack.Screen
+            name="Chitietsanpham"
+            component={Chitietsanpham}
+            options={{ title: "Chi tiết sản phẩm" }}
+          />
+          <Stack.Screen name="Đặt hàng" component={DonHang} options={{ title: "Đặt hàng" }} />
+          <Stack.Screen name="Lịch Sử Chatbot" component={LichSuChatBot} options={{ title: "Lịch sử chat" }} />
+          <Stack.Screen name="Tìm kiếm" component={TimKiem} options={{ title: "Tìm kiếm" }} />
+          <Stack.Screen name="Thông báo" component={ThongBao} options={{ title: "Thông báo" }} />
+        </>
       ) : (
         <>
           <Stack.Screen name="Đăng nhập" component={DangNhap} options={{ headerShown: false }} />
@@ -86,14 +108,14 @@ function MainNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-       <CartProvider>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={AppTheme.colors.background}
-      />
-      <NavigationContainer theme={AppTheme}>
-        <MainNavigator />
-      </NavigationContainer>
+      <CartProvider>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={AppTheme.colors.background}
+        />
+        <NavigationContainer theme={AppTheme}>
+          <MainNavigator />
+        </NavigationContainer>
       </CartProvider>
     </AuthProvider>
   );

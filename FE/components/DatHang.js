@@ -13,14 +13,16 @@ import {
 } from 'react-native';
 import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan } from '../service/api';
 import { Picker } from '@react-native-picker/picker';
+import { useAuth } from '../context/Auth';
 
 
-export default function DatHang({ route, token }) {
+export default function DatHang({ route }) {
   const [orderDetails, setOrderDetails] = useState({
     items: [],
     tongtien: 0,
     diaChi: '',
   });
+  const { token } = useAuth();
   const [orderId, setOrderId] = useState('');
   const [orderInfo, setOrderInfo] = useState(null);
   const [message, setMessage] = useState('');
@@ -132,47 +134,46 @@ export default function DatHang({ route, token }) {
       <Text>SĐT: {userInfo.sdt}</Text>
       <Text>Địa chỉ: {userInfo.diachi}</Text>
 
-<Text>Số lượng:</Text>
-<Picker
-  selectedValue={orderDetails.items[0]?.soluong}
-  onValueChange={(itemValue) => {
-    if (itemValue > selectedItem.soluong) {
-      setError('Số lượng vượt quá tồn kho!');
-    } else {
-      setError('');
-    }
+      <Text>Số lượng:</Text>
+      <Picker
+        selectedValue={orderDetails.items[0]?.soluong}
+        onValueChange={(itemValue) => {
+          if (itemValue > selectedItem.soluong) {
+            setError('Số lượng vượt quá tồn kho!');
+          } else {
+            setError('');
+          }
 
-    setOrderDetails((prev) => ({
-      ...prev,
-      items: [{ ...prev.items[0], soluong: itemValue }],
-      tongtien: itemValue * selectedItem.gia,
-    }));
-  }}
-  style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 10 }}
->
-  {Array.from({ length: selectedItem?.soluong || 10 }, (_, i) => i + 1).map((num) => (
-    <Picker.Item key={num} label={`${num}`} value={num} />
-  ))}
-</Picker>
+          setOrderDetails((prev) => ({
+            ...prev,
+            items: [{ ...prev.items[0], soluong: itemValue }],
+            tongtien: itemValue * selectedItem.gia,
+          }));
+        }}
+        style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 10 }}
+      >
+        {Array.from({ length: selectedItem?.soluong || 10 }, (_, i) => i + 1).map((num) => (
+          <Picker.Item key={num} label={`${num}`} value={num} />
+        ))}
+      </Picker>
 
-{error ? (
-  <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>
-) : null}
+      {error ? (
+        <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>
+      ) : null}
 
-<Text>Tổng tiền: {orderDetails.tongtien?.toLocaleString() || 0} VNĐ</Text>
+      <Text>Tổng tiền: {orderDetails.tongtien?.toLocaleString() || 0} VNĐ</Text>
 
 
       <Button title="Đặt hàng" onPress={handlePlaceOrder} disabled={loading} />
 
-      <View style={{ marginVertical: 20 }}>
-        <Text style={styles.label}>Xem chi tiết đơn hàng</Text>
-        <Button title="Xem chi tiết" onPress={handleFetchOrderDetails} disabled={loading} />
-      </View>
+      {orderId !== '' && (
+        <View style={{ marginVertical: 20 }}>
+          <Text style={styles.label}>Xem chi tiết đơn hàng</Text>
+          <Button title="Xem chi tiết" onPress={handleFetchOrderDetails} disabled={loading} />
+        </View>
+      )}
 
-      {message ? <Text style={{ marginTop: 10, color: 'red' }}>{message}</Text> : null}
-      {loading && <ActivityIndicator size="large" color="#0000ff" />}
-
-      {orderInfo && (
+      {orderId !== '' && orderInfo && (
         <View style={{ marginTop: 20 }}>
           <Text style={styles.label}>Chi tiết đơn hàng:</Text>
           {orderInfo.map((item, index) => (
@@ -189,6 +190,7 @@ export default function DatHang({ route, token }) {
           )}
         </View>
       )}
+
 
       {/* Modal chỉnh sửa thông tin khách hàng */}
       <Modal visible={showModal} transparent animationType="slide">

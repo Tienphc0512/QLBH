@@ -14,12 +14,14 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
 import { FontAwesome } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { useAuth } from '../context/Auth';
 
-const SanPham = ({ token }) => {
+const SanPham = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { ten } = route.params;
   const { addToCart } = useCart();
+  const { token } = useAuth();
 
   const [sanPham, setSanPham] = useState(null);
   const [loading, setLoading] = useState(true);
