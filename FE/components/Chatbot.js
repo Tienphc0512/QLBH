@@ -39,7 +39,8 @@ const { token } = useAuth();
 
       const res = await axios.post("http://192.168.100.7:3000/api/chat", { prompt: input }, config);
 
-      setResponse(res.data.reply || "Không có phản hồi từ chatbot.");
+      setResponse(res.data.response || "Không có phản hồi từ chatbot.");
+
     } catch (error) {
       console.error("Lỗi gọi API:", error.message);
       setResponse("Đã xảy ra lỗi.");

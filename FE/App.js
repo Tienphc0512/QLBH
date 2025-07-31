@@ -44,8 +44,8 @@ function MainTabs() {
       <Tab.Screen name="Trang chủ" component={TrangChu} />
       <Tab.Screen name="Giỏ hàng" component={GioHang} />
       <Tab.Screen name="Đơn hàng" component={DonHang} />
-      <Tab.Screen name="Chatbot" component={Chatbot} />
-      <Tab.Screen name="Tài khoản" component={TaiKhoan} />
+      {/* <Tab.Screen name="Chatbot" component={Chatbot} />
+      <Tab.Screen name="Tài khoản" component={TaiKhoan} /> */}
     </Tab.Navigator>
   );
 }
@@ -94,6 +94,9 @@ function MainNavigator() {
           <Stack.Screen name="Lịch Sử Chatbot" component={LichSuChatBot} options={{ title: "Lịch sử chat" }} />
           <Stack.Screen name="Tìm kiếm" component={TimKiem} options={{ title: "Tìm kiếm" }} />
           <Stack.Screen name="Thông báo" component={ThongBao} options={{ title: "Thông báo" }} />
+          <Stack.Screen name="Chatbot" component={Chatbot} options={{ title: "Chat với AI" }} />
+          <Stack.Screen name="Tài khoản" component={TaiKhoan} options={{ title: "Tài khoản" }} />
+          
         </>
       ) : (
         <>

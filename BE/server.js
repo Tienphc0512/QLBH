@@ -29,7 +29,7 @@ const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Token không hợp lệ" });
+    return res.status(401).json({ error: "Phiên đã hết hạn, vui lòng đăng nhập lại" });
   }
 
   const token = authHeader.split(" ")[1];
@@ -37,7 +37,7 @@ const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, SECRET_KEY); // giải mã token
     req.user = decoded;
-    req.userId = decoded.id; // ⚠️ THÊM DÒNG NÀY
+    req.userId = decoded.id; 
     next();
   } catch (error) {
     return res.status(401).json({ error: "Token không hợp lệ" });
@@ -485,26 +485,51 @@ app.get("/api/chi_tiet_huy_don_hang/:id", verifyToken, async (req, res) => {
 });
 
 // xem lịch sử tìm kiếm trên chatbot
+// app.get("/api/lich_su_tim_kiem", verifyToken, async (req, res) => {
+//   try {
+//     const user_id = req.userId;
+//     const result = await pool.query(
+//       "SELECT * FROM lichsutimkiemai WHERE user_id = $1 ORDER BY created_at DESC",
+//       [user_id]
+//     );
+//     res.json(result.rows);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Lỗi khi lấy lịch sử tìm kiếm" });
+//   }
+// });
+
 app.get("/api/lich_su_tim_kiem", verifyToken, async (req, res) => {
   try {
-    const user_id = req.userId;
+    const userId = req.userId; // Lấy từ middleware verifyToken
     const result = await pool.query(
       "SELECT * FROM lichsutimkiemai WHERE user_id = $1 ORDER BY created_at DESC",
-      [user_id]
+      [userId]
     );
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error("Lỗi lấy lịch sử:", err);
     res.status(500).json({ error: "Lỗi khi lấy lịch sử tìm kiếm" });
   }
 });
 
 // Gọi Flask API để lấy embedding
+// app.post("/api/embed", verifyToken, async (req, res) => {
+//   try {
+//     const response = await axios.post("http://localhost:5000/embed", {
+//       text: req.body.text,
+//     });
+//     res.json(response.data);
+//   } catch (error) {
+//     console.error("Embed error:", error.message);
+//     res.status(500).json({ error: "Embedding failed" });
+//   }
+// });
+
 app.post("/api/embed", verifyToken, async (req, res) => {
   try {
-    const response = await axios.post("http://localhost:5000/embed", {
-      text: req.body.text,
-    });
+    const { text } = req.body;
+    const response = await axios.post("http://localhost:5000/embed", { text });
     res.json(response.data);
   } catch (error) {
     console.error("Embed error:", error.message);
@@ -513,12 +538,29 @@ app.post("/api/embed", verifyToken, async (req, res) => {
 });
 
 // Gọi Flask API để lấy phản hồi chatbot
+// app.post("/api/chat", verifyToken, async (req, res) => {
+//   try {
+//     const response = await axios.post("http://localhost:5000/chat", {
+//       prompt: req.body.prompt,
+//     });
+//     res.json(response.data);
+//   } catch (error) {
+//     console.error("Chat error:", error.message);
+//     res.status(500).json({ error: "Chat failed" });
+//   }
+// });
+
 app.post("/api/chat", verifyToken, async (req, res) => {
   try {
+    const userId = req.userId; 
+    const { prompt } = req.body;
+
     const response = await axios.post("http://localhost:5000/chat", {
-      prompt: req.body.prompt,
+      prompt,
+      user_id: userId, 
     });
-    res.json(response.data);
+
+    res.json(response.data); // { response: "..." }
   } catch (error) {
     console.error("Chat error:", error.message);
     res.status(500).json({ error: "Chat failed" });
