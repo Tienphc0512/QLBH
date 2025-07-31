@@ -12,7 +12,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan } from '../service/api';
-import { Picker } from '@react-native-picker/picker';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { useAuth } from '../context/Auth';
 
 
@@ -135,7 +135,7 @@ export default function DatHang({ route }) {
       <Text>Địa chỉ: {userInfo.diachi}</Text>
 
       <Text>Số lượng:</Text>
-      <Picker
+       <DropDownPicker
         selectedValue={orderDetails.items[0]?.soluong}
         onValueChange={(itemValue) => {
           if (itemValue > selectedItem.soluong) {
@@ -153,9 +153,9 @@ export default function DatHang({ route }) {
         style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 10 }}
       >
         {Array.from({ length: selectedItem?.soluong || 10 }, (_, i) => i + 1).map((num) => (
-          <Picker.Item key={num} label={`${num}`} value={num} />
+          <DropDownPicker.Item key={num} label={`${num}`} value={num} />
         ))}
-      </Picker>
+      </DropDownPicker>
 
       {error ? (
         <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>

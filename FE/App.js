@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "react-native";
 import { AuthProvider, useAuth } from "./context/Auth";
 import { CartProvider } from "./context/CartContext";
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import TrangChu from "./components/TrangChu";
 import GioHang from "./components/GioHang";
@@ -40,12 +41,29 @@ const AppTheme = {
 // Tabs sau khi đăng nhập
 function MainTabs() {
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ color, size }) => {
+          let iconName;
+
+          if (route.name === 'Trang chủ') iconName = 'home-outline';
+          else if (route.name === 'Giỏ hàng') iconName = 'cart-outline';
+          else if (route.name === 'Đơn hàng') iconName = 'receipt-outline';
+          // else if (route.name === 'Chatbot') iconName = 'chatbubbles-outline';
+          else if (route.name === 'Tài khoản') iconName = 'person-outline';
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#4A6FA5',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: false, // Ẩn header nếu bạn không cần trên từng tab
+      })}
+    >
       <Tab.Screen name="Trang chủ" component={TrangChu} />
       <Tab.Screen name="Giỏ hàng" component={GioHang} />
       <Tab.Screen name="Đơn hàng" component={DonHang} />
-      {/* <Tab.Screen name="Chatbot" component={Chatbot} />
-      <Tab.Screen name="Tài khoản" component={TaiKhoan} /> */}
+      {/* <Tab.Screen name="Chatbot" component={Chatbot} /> */}
+      <Tab.Screen name="Tài khoản" component={TaiKhoan} />
     </Tab.Navigator>
   );
 }
@@ -95,7 +113,7 @@ function MainNavigator() {
           <Stack.Screen name="Tìm kiếm" component={TimKiem} options={{ title: "Tìm kiếm" }} />
           <Stack.Screen name="Thông báo" component={ThongBao} options={{ title: "Thông báo" }} />
           <Stack.Screen name="Chatbot" component={Chatbot} options={{ title: "Chat với AI" }} />
-          <Stack.Screen name="Tài khoản" component={TaiKhoan} options={{ title: "Tài khoản" }} />
+        
           
         </>
       ) : (

@@ -13,7 +13,7 @@ import { fetchSanPham } from '../service/api';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartContext';
 import { FontAwesome } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { useAuth } from '../context/Auth';
 
 const SanPham = () => {
@@ -80,15 +80,15 @@ const SanPham = () => {
       <Text style={styles.desc}>Mô tả: {sanPham.mota}</Text>
 
       <Text style={{ fontWeight: 'bold' }}>Chọn số lượng:</Text>
-      <Picker
+        <DropDownPicker
         selectedValue={quantity}
         onValueChange={(value) => setQuantity(value)}
         style={{ height: 50, width: 150 }}
       >
         {[...Array(10).keys()].map((_, i) => (
-          <Picker.Item key={i + 1} label={`${i + 1}`} value={i + 1} />
+          <DropDownPicker.Item key={i + 1} label={`${i + 1}`} value={i + 1} />
         ))}
-      </Picker>
+        </DropDownPicker>
 
       <View style={{ marginVertical: 16 }}>
         <TouchableOpacity
