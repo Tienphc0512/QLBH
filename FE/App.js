@@ -113,6 +113,8 @@ function MainNavigator() {
           <Stack.Screen name="Tìm kiếm" component={TimKiem} options={{ title: "Tìm kiếm" }} />
           <Stack.Screen name="Thông báo" component={ThongBao} options={{ title: "Thông báo" }} />
           <Stack.Screen name="Chatbot" component={Chatbot} options={{ title: "Chat với AI" }} />
+          <Stack.Screen name="Chi tiết sản phẩm" component={Chitietsanpham} options={{ title: "Chi tiết sản phẩm" }} />
+          <Stack.Screen name="Sản phẩm" component={Sanpham} options={{ title: "Sản phẩm" }} />
         
           
         </>

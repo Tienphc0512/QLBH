@@ -40,11 +40,9 @@ const verifyToken = (req, res, next) => {
     req.userId = decoded.id; 
     next();
   } catch (error) {
-    return res.status(401).json({ error: "Token không hợp lệ" });
+    return res.status(401).json({ error: "Phiên đã hết hạn, vui lòng đăng nhập lại" });
   }
 };
-
-
 
 
 
@@ -124,24 +122,24 @@ app.put('/api/taikhoan', verifyToken, async (req, res) => {
     let query = '';
     let values = [];
 
-    if (matkhau) {
-      const salt = await bcrypt.genSalt(10); // nếu có pass thì sẽ mã hóa lại mk
-      const hashedPassword = await bcrypt.hash(matkhau, salt);
-//r cập nhật lại các trường trong csdl
-      query = `
-        UPDATE nguoidung 
-        SET hoten = $1, email = $2, sdt = $3, matkhau = $4, diachi = $5
-        WHERE id = $6
-      `;
-      values = [hoten, email,  sdt, hashedPassword, diachi, req.userId];
-    } else { // nếu k có pass thì chỉ cập nhật các trường khác
-       query = `
-        UPDATE nguoidung 
-        SET hoten = $1, email = $2, sdt = $3, matkhau = $4, diachi = $5
-        WHERE id = $6
-      `;
-      values = [hoten, email, sdt, diachi, req.userId];
-    }
+   if (matkhau) {
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(matkhau, salt);
+  query = `
+    UPDATE nguoidung 
+    SET hoten = $1, email = $2, sdt = $3, matkhau = $4, diachi = $5
+    WHERE id = $6
+  `;
+  values = [hoten, email, sdt, hashedPassword, diachi, req.userId];
+} else {
+  query = `
+    UPDATE nguoidung 
+    SET hoten = $1, email = $2, sdt = $3, diachi = $4
+    WHERE id = $5
+  `;
+  values = [hoten, email, sdt, diachi, req.userId];
+}
+
 
     await pool.query(query, values);
 
@@ -167,19 +165,48 @@ app.get("/api/all_users", verifyToken, async (req, res) => {
 app.get('/api/sanpham', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT DISTINCT ON (sp.id)
-        sp.id,
-        sp.ten AS ten_san_pham,
-        sp.gia,
-        ha.image_path AS anh_dai_dien
-      FROM sanpham sp
-      JOIN hinhanh_sanpham ha ON sp.id = ha.sanpham_id
-      ORDER BY sp.id, ha.id;
+SELECT DISTINCT ON (sp.id)
+  sp.id,
+  sp.ten AS ten_san_pham,
+  sp.gia,
+  sp.soluong,
+  COALESCE(ha.image_path, 'https://example.com/default-image.jpg') AS anh_dai_dien
+FROM sanpham sp
+LEFT JOIN hinhanh_sanpham ha ON sp.id = ha.sanpham_id
+ORDER BY sp.id, ha.id;
+
+
     `);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Lỗi lấy dữ liệu sản phẩm' });
+  }
+});
+
+//chi tiết sản phẩm
+app.get('/api/sanpham/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const sanpham = await pool.query(`
+      SELECT * FROM sanpham WHERE id = $1
+    `, [id]);
+
+    const hinhanh = await pool.query(`
+      SELECT image_path FROM hinhanh_sanpham WHERE sanpham_id = $1
+    `, [id]);
+
+    if (sanpham.rows.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
+    }
+
+    res.json({
+      ...sanpham.rows[0],
+      hinhanh: hinhanh.rows.map(h => h.image_path)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Lỗi server' });
   }
 });
 
@@ -200,14 +227,18 @@ app.get('/api/sanpham', verifyToken, async (req, res) => {
 
 // xem danh mục để link qua sản phẩm theo danh mục
 app.get("/api/danhmuc", verifyToken, async (req, res) => {
+  // console.log("API /api/danhmuc được gọi");
+
   try {
     const result = await pool.query("SELECT * FROM danhmuc");
+    // console.log("Số lượng danh mục:", result.rows.length);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error("Lỗi SQL:", err);
     res.status(500).json({ error: "Lỗi khi lấy danh mục" });
   }
 });
+
 
 // xem giỏ hàng 
 app.get("/api/giohang", verifyToken, async (req, res) => {
@@ -266,9 +297,7 @@ app.delete("/api/giohang/:id", verifyToken, async (req, res) => {
         "DELETE FROM giohang WHERE id = $1 AND user_id = $2",
         [itemId, userId]
         );
-    if (result.rowCount === 0) {
-        return res.status(404).json({ error: "Không tìm thấy sản phẩm trong giỏ hàng" });
-    }   
+ 
     res.json({ message: "Sản phẩm đã được xóa khỏi giỏ hàng" });
     } catch (err) {
     console.error(err);
@@ -566,6 +595,27 @@ app.post("/api/chat", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Chat failed" });
   }
 });
+
+app.post("/api/faq", verifyToken, async (req, res) => {
+  const { question, answer } = req.body;
+  try {
+    // Gọi Flask để lấy embedding
+    const embedRes = await axios.post("http://localhost:5000/embed", { text: question });
+    const embedding = embedRes.data.embedding;
+
+    // Lưu vào PostgreSQL
+    await pool.query(`
+      INSERT INTO faq (question, answer, embedding)
+      VALUES ($1, $2, $3)
+    `, [question, answer, embedding]);
+
+    res.status(201).json({ message: "FAQ added successfully" });
+  } catch (error) {
+    console.error("Add FAQ error:", error.message);
+    res.status(500).json({ error: "Failed to add FAQ" });
+  }
+});
+
 
 app.listen(3000, '0.0.0.0', () => {
   console.log('Server is running');

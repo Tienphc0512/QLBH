@@ -137,6 +137,23 @@ export async function fetchSanPham(name, token) {
   }
 }
 
+// api xem chi tiết sản phẩm
+export async function fetchChiTietSanPham(sanphamId, token) {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/sanpham/${sanphamId}`, {
+      headers: {  
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Lấy chi tiết sản phẩm thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
 // api thêm sản phẩm vào giỏ hàng
 export async function addToCart(item, token) {  
   try {

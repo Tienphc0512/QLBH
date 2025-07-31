@@ -12,7 +12,6 @@ import {
   StyleSheet,
 } from 'react-native';
 import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan } from '../service/api';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { useAuth } from '../context/Auth';
 
 
@@ -69,7 +68,7 @@ export default function DatHang({ route }) {
   return () => {
     isMounted = false;
   };
-}, []); // <-- CHỈ CHẠY MỘT LẦN SAU KHI MOUNT
+}, []); 
 
 
   const handlePlaceOrder = async () => {
@@ -122,6 +121,25 @@ export default function DatHang({ route }) {
       },
     ]);
   };
+// const handleIncrease = (id) => {
+//   const updated = data.map((item) => {
+//     if (item.id === id) {
+//       return { ...item, soluong: (item.soluong ?? 0) + 1 };
+//     }
+//     return item;
+//   });
+//   setData(updated);
+// };
+
+// const handleDecrease = (id) => {
+//   const updated = data.map((item) => {
+//     if (item.id === id && (item.soluong ?? 0) > 0) {
+//       return { ...item, soluong: item.soluong - 1 };
+//     }
+//     return item;
+//   });
+//   setData(updated);
+// };
 
   const canCancel =
     orderInfo && orderInfo.length > 0 && orderInfo[0].trangthai === 'choxuly';
@@ -141,28 +159,49 @@ export default function DatHang({ route }) {
       <Text>SĐT: {userInfo.sdt}</Text>
       <Text>Địa chỉ: {userInfo.diachi}</Text>
 
-      <Text>Số lượng:</Text>
-       <DropDownPicker
-        selectedValue={orderDetails.items[0]?.soluong}
-        onValueChange={(itemValue) => {
-          if (itemValue > selectedItem.soluong) {
-            setError('Số lượng vượt quá tồn kho!');
-          } else {
-            setError('');
-          }
+<Text style={{ marginTop: 15 }}>Số lượng:</Text>
+<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 5 }}>
+  <TouchableOpacity
+    onPress={() => {
+      const currentQty = orderDetails.items[0].soluong;
+      if (currentQty > 1) {
+        const newQty = currentQty - 1;
+        setOrderDetails((prev) => ({
+          ...prev,
+          items: [{ ...prev.items[0], soluong: newQty }],
+          tongtien: newQty * selectedItem.gia,
+        }));
+      }
+    }}
+    style={styles.qtyButton}
+  >
+    <Text style={styles.qtyText}>−</Text>
+  </TouchableOpacity>
 
-          setOrderDetails((prev) => ({
-            ...prev,
-            items: [{ ...prev.items[0], soluong: itemValue }],
-            tongtien: itemValue * selectedItem.gia,
-          }));
-        }}
-        style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 10 }}
-      >
-        {Array.from({ length: selectedItem?.soluong || 10 }, (_, i) => i + 1).map((num) => (
-          <DropDownPicker.Item key={num} label={`${num}`} value={num} />
-        ))}
-      </DropDownPicker>
+  <Text style={{ marginHorizontal: 20, fontSize: 16 }}>
+    {orderDetails.items[0].soluong}
+  </Text>
+
+  <TouchableOpacity
+    onPress={() => {
+      const currentQty = orderDetails.items[0].soluong;
+      if (currentQty < selectedItem.soluong) {
+        const newQty = currentQty + 1;
+        setOrderDetails((prev) => ({
+          ...prev,
+          items: [{ ...prev.items[0], soluong: newQty }],
+          tongtien: newQty * selectedItem.gia,
+        }));
+      } else {
+        Alert.alert('Thông báo', 'Số lượng vượt quá tồn kho!');
+      }
+    }}
+    style={styles.qtyButton}
+  >
+    <Text style={styles.qtyText}>+</Text>
+  </TouchableOpacity>
+</View>
+
 
       {error ? (
         <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>
@@ -253,4 +292,15 @@ const styles = StyleSheet.create({
   },
   modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 8 },
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+    qtyButton: {
+    backgroundColor: '#ddd',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+  },
+  qtyText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+
 });

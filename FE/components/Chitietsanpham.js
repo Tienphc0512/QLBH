@@ -1,145 +1,230 @@
-import React, { useContext, useState } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
-import { CartContext } from "../context/CartContext";
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  TextInput,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { useCart } from '../context/CartContext'; 
+import { fetchChiTietSanPham } from '../service/api'; 
+import { useAuth } from '../context/Auth'; 
 
-const Chitietsanpham = ({ route, navigation }) => {
+
+const DEFAULT_IMAGE = 'https://via.placeholder.com/150';
+
+const ChiTietSanPhamScreen = () => {
+  const route = useRoute();
+  const navigation = useNavigation();
   const { item } = route.params;
-  const { addToCart } = useContext(CartContext);
+  const [sanpham, setSanpham] = useState(null);
   const [soluong, setSoluong] = useState(1);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  if (!item) {
+
+  const { token } = useAuth(); 
+  const { addToCart } = useCart();
+
+  useEffect(() => {
+    const loadChiTiet = async () => {
+      try {
+        const data = await fetchChiTietSanPham(item.id, token);
+        setSanpham(data);
+        console.log(data);
+      } catch (err) {
+        Alert.alert('Lỗi', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadChiTiet();
+  }, [item.id]);
+
+const handleIncrease = () => {
+  const tonKho = parseInt(sanpham.soluong); // đảm bảo kiểu số
+
+  if (soluong + 1 > tonKho) {
+    Alert.alert('Thông báo', 'Số lượng vượt quá tồn kho!');
+  } else {
+    setSoluong(prev => prev + 1);
+  }
+};
+
+
+  const handleDecrease = () => {
+    setSoluong(prev => (prev > 1 ? prev - 1 : 1));
+  };
+
+const handleAddToCart = () => {
+  addToCart({ ...sanpham, soluong }); 
+  Alert.alert('Đã thêm vào giỏ hàng');
+};
+
+// hàm xử lý số lượng khi nhập tay
+const handleChangeSoluong = (text, productId, max) => {
+  const newValue = parseInt(text);
+
+  if (!text || isNaN(newValue) || newValue <= 0) {
+   //nếu text rỗng hoặc không phải số, đặt về 1
+    setSoluong(1); 
+// khi nào nhập đúng số khác thì chuyển qua số đó
+    return;
+  }
+
+  if (newValue > max) {
+    Alert.alert('Thông báo', `Số lượng vượt quá tồn kho! (Tối đa: ${max})`);
+    setSoluong(max);
+  } else {
+    setSoluong(newValue);
+  }
+};
+
+
+  const handleOrderNow = () => {
+    navigation.navigate('Đặt hàng', {
+      item: { ...sanpham, tongtien },
+    });
+  };
+
+  if (loading || !sanpham) {
     return (
       <View style={styles.center}>
-        <Text>Không tìm thấy thông tin sản phẩm.</Text>
+        <ActivityIndicator size="large" color="blue" />
+        <Text>Đang tải chi tiết sản phẩm...</Text>
       </View>
     );
   }
 
-  const handleIncrease = () => {
-    if (soluong < item.tonkho) {
-      setSoluong(soluong + 1);
-      setError("");
-    } else {
-      setError("Số lượng vượt quá tồn kho!");
-    }
-  };
-
-  const handleDecrease = () => {
-    if (soluong > 1) {
-      setSoluong(soluong - 1);
-      setError("");
-    }
-  };
-
-  const handleAddToCart = () => {
-    if (soluong > item.soluong) {
-      setError("Số lượng vượt quá tồn kho!");
-      return;
-    }
-    addToCart({ ...item, soluong });
-    Alert.alert("Thành công", "Đã thêm vào giỏ hàng!");
-  };
-
-  const handleOrderNow = () => {
-    if (soluong > item.soluong) {
-      setError("Số lượng vượt quá tồn kho!");
-      return;
-    }
-    navigation.navigate("Đặt hàng", { item: { ...item, soluong } });
-  };
+  const hinhAnhArray = sanpham?.hinhanh?.length > 0 ? sanpham.hinhanh : [sanpham.anh_dai_dien || DEFAULT_IMAGE];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Image source={{ uri: item.image_path }} style={styles.image} />
-      <Text style={styles.name}>{item.ten}</Text>
-      <Text style={styles.price}>{item.gia.toLocaleString()}₫</Text>
-      <Text style={styles.desc}>{item.mota}</Text>
-      <Text style={{ marginBottom: 8 }}>Tồn kho: {item.soluong}</Text>
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+        {hinhAnhArray.map((uri, index) => (
+          <Image key={index} source={{ uri }} style={styles.image} />
+        ))}
+      </ScrollView>
+<Text style={styles.swipeHint}>← Vuốt để xem thêm ảnh →</Text>
+      <Text style={styles.name}>{sanpham.ten}</Text>
+      <Text style={styles.price}>{parseInt(sanpham.gia).toLocaleString()} đ</Text>
+      <Text style={styles.desc}>{sanpham.mota || 'Không có mô tả.'}</Text>
+      <Text style={styles.stock}>Tồn kho: {sanpham.soluong}</Text>
 
-      {/* Chọn số lượng */}
-      <View style={styles.qtyRow}>
-        <TouchableOpacity style={styles.qtyBtn} onPress={handleDecrease}>
-          <Text style={styles.qtyBtnText}>-</Text>
+      <View style={styles.quantityContainer}>
+        <TouchableOpacity onPress={handleDecrease}>
+          <Ionicons name="remove-circle-outline" size={32} color="black" />
         </TouchableOpacity>
-        <Text style={styles.qtyText}>{soluong}</Text>
-        <TouchableOpacity style={styles.qtyBtn} onPress={handleIncrease}>
-          <Text style={styles.qtyBtnText}>+</Text>
+ <TextInput
+  style={styles.quantityInput}
+  keyboardType="numeric"
+  value={soluong.toString()}
+  onChangeText={(text) =>
+    handleChangeSoluong(text, sanpham.id, sanpham.soluong)
+  }
+/>
+
+        <TouchableOpacity onPress={handleIncrease}>
+          <Ionicons name="add-circle-outline" size={32} color="black" />
         </TouchableOpacity>
       </View>
-      {error ? <Text style={{ color: "red", marginBottom: 8 }}>{error}</Text> : null}
 
       <View style={styles.buttonGroup}>
-        <TouchableOpacity
-          style={styles.cartButton}
-          onPress={handleAddToCart}
-        >
-          <Text style={styles.buttonText}>🛒 Thêm vào giỏ</Text>
+        <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
+          <Text style={styles.buttonText}>Thêm vào giỏ</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.orderButton}
-          onPress={handleOrderNow}
-        >
-          <Text style={styles.buttonText}>Mua ngay</Text>
+        <TouchableOpacity style={styles.orderButton} onPress={handleOrderNow}>
+          <Text style={styles.buttonText}>Đặt hàng</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
 
-export default Chitietsanpham;
-
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
     padding: 16,
-    backgroundColor: "#fff",
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   image: {
-    width: 220,
-    height: 220,
-    borderRadius: 12,
-    marginBottom: 16,
-    backgroundColor: "#eee",
+    width: 300,
+    height: 300,
+    resizeMode: 'contain',
+    borderRadius: 10,
+    marginRight: 10,
   },
   name: {
     fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   price: {
-    fontSize: 20,
-    color: "#d32f2f",
-    marginBottom: 8,
+    fontSize: 18,
+    color: '#007BFF',
+    marginBottom: 6,
   },
   desc: {
     fontSize: 16,
-    color: "#444",
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  stock: {
+    fontSize: 14,
+    color: '#888',
     marginBottom: 20,
-    textAlign: "center",
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  quantity: {
+    fontSize: 20,
+    marginHorizontal: 15,
   },
   buttonGroup: {
-    flexDirection: "row",
-    marginTop: 12,
+    flexDirection: 'row',
+    gap: 10,
   },
   cartButton: {
-    backgroundColor: "#388e3c",
+    backgroundColor: '#388e3c',
     padding: 12,
     borderRadius: 8,
     marginRight: 10,
   },
   orderButton: {
-    backgroundColor: "#1976d2",
+    backgroundColor: '#1976d2',
     padding: 12,
     borderRadius: 8,
   },
   buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: '#fff',
+    fontWeight: 'bold',
   },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 40,
+  },
+  quantityInput: {
+  width: 60,
+  height: 40,
+  textAlign: 'center',
+  fontSize: 18,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 8,
+  marginHorizontal: 10,
+},
+
 });
+
+export default ChiTietSanPhamScreen;

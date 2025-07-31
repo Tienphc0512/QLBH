@@ -7,139 +7,91 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { fetchSanPham } from '../service/api';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useCart } from '../context/CartContext';
-import { FontAwesome } from '@expo/vector-icons';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { useAuth } from '../context/Auth';
 
 const SanPham = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { ten } = route.params;
-  const { addToCart } = useCart();
+  const { danhmucId } = route.params;
   const { token } = useAuth();
 
-  const [sanPham, setSanPham] = useState(null);
+  const [sanPham, setSanPham] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    if (ten && token) {
-      fetchSanPham(ten, token)
+    if (danhmucId && token) {
+      fetchSanPham(token)
         .then((data) => {
-          setSanPham(data);
-          setLoading(false);
+          const filtered = data.filter(sp => sp.danhmuc_id === danhmucId);
+          setSanPham(filtered);
         })
         .catch((error) => {
           console.error(error.message);
-          setLoading(false);
-        });
+        })
+        .finally(() => setLoading(false));
     }
-  }, [ten, token]);
-
-  const handleAddToCart = () => {
-    const item = {
-      id: sanPham.id,
-      ten: sanPham.ten,
-      gia: sanPham.gia,
-      soluong: quantity,
-      anh_dai_dien: sanPham.hinhanh,
-    };
-
-    addToCart(item);
-    Alert.alert('Thành công', `Đã thêm "${sanPham.ten}" (${quantity} cái) vào giỏ hàng`);
-  };
-
-  const handleOrder = () => {
-    navigation.navigate('DatHang', { product: sanPham, quantity });
-  };
+  }, [danhmucId, token]);
 
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" style={{ marginTop: 50 }} />;
   }
 
-  if (!sanPham) {
+  if (!sanPham || sanPham.length === 0) {
     return (
       <View style={styles.container}>
-        <Text>Không tìm thấy sản phẩm.</Text>
+        <Text>Không có sản phẩm trong danh mục này.</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container}>
-      {sanPham.hinhanh && (
-        <Image source={{ uri: sanPham.hinhanh }} style={styles.image} resizeMode="contain" />
-      )}
-      <Text style={styles.name}>{sanPham.ten}</Text>
-      <Text style={styles.price}>Giá: {sanPham.gia?.toLocaleString()}₫</Text>
-      <Text style={styles.desc}>Mô tả: {sanPham.mota}</Text>
-
-      <Text style={{ fontWeight: 'bold' }}>Chọn số lượng:</Text>
-        <DropDownPicker
-        selectedValue={quantity}
-        onValueChange={(value) => setQuantity(value)}
-        style={{ height: 50, width: 150 }}
-      >
-        {[...Array(10).keys()].map((_, i) => (
-          <DropDownPicker.Item key={i + 1} label={`${i + 1}`} value={i + 1} />
-        ))}
-        </DropDownPicker>
-
-      <View style={{ marginVertical: 16 }}>
+      {sanPham.map((item) => (
         <TouchableOpacity
-          style={styles.cartButton}
-          onPress={handleAddToCart}
+          key={item.id}
+          style={styles.card}
+          onPress={() =>
+            navigation.navigate('Chi tiết sản phẩm', { sanpham: item })
+          }
         >
-          <FontAwesome name="shopping-cart" size={20} color="#fff" />
-          <Text style={styles.buttonText}>Thêm vào giỏ hàng</Text>
+          <Image source={{ uri: item.hinhanh }} style={styles.image} />
+          <View style={styles.info}>
+            <Text style={styles.name}>{item.ten}</Text>
+            <Text style={styles.price}>{item.gia.toLocaleString()}₫</Text>
+          </View>
         </TouchableOpacity>
-      </View>
-
-      <View style={{ marginBottom: 40 }}>
-        <TouchableOpacity
-          style={styles.orderButton}
-          onPress={handleOrder}
-        >
-          <FontAwesome name="credit-card" size={20} color="#fff" />
-          <Text style={styles.buttonText}>Đặt hàng ngay</Text>
-        </TouchableOpacity>
-      </View>
+      ))}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: '#fff' },
-  image: { width: '100%', height: 250, marginBottom: 16 },
-  name: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  price: { fontSize: 20, color: 'green', marginBottom: 8 },
-  desc: { fontSize: 16, marginBottom: 20 },
-  cartButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#28a745',
-    padding: 12,
-    borderRadius: 6,
-    justifyContent: 'center',
+  card: {
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  orderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007bff',
-    padding: 12,
-    borderRadius: 6,
-    justifyContent: 'center',
+  image: {
+    width: '100%',
+    height: 180,
   },
-  buttonText: {
-    color: '#fff',
+  info: {
+    padding: 12,
+  },
+  name: {
+    fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 8,
+    marginBottom: 4,
+  },
+  price: {
     fontSize: 16,
+    color: 'green',
   },
 });
 

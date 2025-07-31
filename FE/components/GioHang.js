@@ -18,6 +18,8 @@ const GioHang = () => {
   const { cartItems, removeFromCart } = useCart();
   const [loadingId, setLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
   const { token } = useAuth();
   const navigation = useNavigation();
 
@@ -41,7 +43,7 @@ const GioHang = () => {
     }
   };
 
- const handlePlaceOrder = async () => {
+const handlePlaceOrder = async () => {
   if (selectedItems.length === 0) {
     Alert.alert("Chưa chọn sản phẩm nào", "Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng.");
     return;
@@ -52,11 +54,12 @@ const GioHang = () => {
   );
 
   try {
-    const response = await placeOrder(selectedProducts); // Gọi API đặt hàng
+    setIsPlacingOrder(true); // bắt đầu loading
+    const response = await placeOrder(selectedProducts);
+
     if (response.success) {
-      // Optionally gọi xóa khỏi giỏ hàng
       for (const item of selectedProducts) {
-        await removeFromCartAPI(item.id); // Gọi API xóa từng sản phẩm khỏi giỏ
+        await removeFromCartAPI(item.id);
       }
 
       Alert.alert("Đặt hàng thành công", "Đơn hàng của bạn đã được xử lý.");
@@ -67,8 +70,11 @@ const GioHang = () => {
   } catch (error) {
     Alert.alert("Lỗi hệ thống", "Không thể kết nối đến máy chủ.");
     console.error("Order error:", error);
+  } finally {
+    setIsPlacingOrder(false); // kết thúc loading
   }
 };
+
 
 
   const renderItem = ({ item }) => (
@@ -106,21 +112,24 @@ const GioHang = () => {
         <>
           <FlatList
             data={cartItems}
-            keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+
+
             renderItem={renderItem}
             contentContainerStyle={{ paddingBottom: 20 }}
           />
-          <TouchableOpacity
-            style={styles.orderBtn}
-            onPress={handlePlaceOrder}
-            disabled={placingOrder}
-          >
-            {placingOrder ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.orderBtnText}>Đặt hàng</Text>
-            )}
-          </TouchableOpacity>
+         <TouchableOpacity
+  style={styles.orderBtn}
+  onPress={handlePlaceOrder}
+  disabled={isPlacingOrder}
+>
+  {isPlacingOrder ? (
+    <ActivityIndicator color="#fff" />
+  ) : (
+    <Text style={styles.orderBtnText}>Đặt hàng</Text>
+  )}
+</TouchableOpacity>
+
         </>
       )}
     </View>
