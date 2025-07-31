@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { useCart } from "../context/CartContext";
-import { removeFromCart as removeFromCartAPI, placeOrderAPI } from "../service/api";
+import { removeFromCart as removeFromCartAPI, placeOrder } from "../service/api";
 import { useAuth } from "../context/Auth";
 import { useNavigation } from "@react-navigation/native";
 import Checkbox from "expo-checkbox"; // Dùng checkbox từ expo, hoặc thay bằng bất kỳ lib nào bạn dùng
@@ -18,7 +18,6 @@ const GioHang = () => {
   const { cartItems, removeFromCart } = useCart();
   const [loadingId, setLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [placingOrder, setPlacingOrder] = useState(false);
   const { token } = useAuth();
   const navigation = useNavigation();
 
@@ -42,7 +41,7 @@ const GioHang = () => {
     }
   };
 
-  const handlePlaceOrder = () => {
+ const handlePlaceOrder = async () => {
   if (selectedItems.length === 0) {
     Alert.alert("Chưa chọn sản phẩm nào", "Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng.");
     return;
@@ -52,7 +51,23 @@ const GioHang = () => {
     selectedItems.includes(item.id)
   );
 
-  navigation.navigate("Đặt hàng", { products: selectedProducts });
+  try {
+    const response = await placeOrder(selectedProducts); // Gọi API đặt hàng
+    if (response.success) {
+      // Optionally gọi xóa khỏi giỏ hàng
+      for (const item of selectedProducts) {
+        await removeFromCartAPI(item.id); // Gọi API xóa từng sản phẩm khỏi giỏ
+      }
+
+      Alert.alert("Đặt hàng thành công", "Đơn hàng của bạn đã được xử lý.");
+      navigation.navigate("Đặt hàng", { products: selectedProducts });
+    } else {
+      Alert.alert("Lỗi đặt hàng", response.message || "Đã có lỗi xảy ra.");
+    }
+  } catch (error) {
+    Alert.alert("Lỗi hệ thống", "Không thể kết nối đến máy chủ.");
+    console.error("Order error:", error);
+  }
 };
 
 

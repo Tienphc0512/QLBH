@@ -32,38 +32,45 @@ export default function DatHang({ route }) {
   const [error, setError] = useState('');
   const selectedItem = route?.params?.item;
 
-  useEffect(() => {
-    if (selectedItem) {
-      setOrderDetails({
-        items: [
-          {
-            sanpham_id: selectedItem.id,
-            soluong: 1,
-            dongia: selectedItem.gia,
-          },
-        ],
-        tongtien: selectedItem.gia,
-        diaChi: '',
-      });
-    }
-  }, [selectedItem]);
+ useEffect(() => {
+  let isMounted = true;
 
-  useEffect(() => {
-    const fetchInfo = async () => {
-      try {
-        const data = await fetchTaiKhoan(token); // API có sẵn
-        setUserInfo({
-          ten: data.hoten,
-          sdt: data.sdt,
-          diachi: data.diachi,
+  const fetchInfoAndInitOrder = async () => {
+    try {
+      const data = await fetchTaiKhoan(token);
+      if (!isMounted) return;
+
+      setUserInfo({
+        ten: data.hoten,
+        sdt: data.sdt,
+        diachi: data.diachi,
+      });
+
+      if (selectedItem) {
+        setOrderDetails({
+          items: [
+            {
+              sanpham_id: selectedItem.id,
+              soluong: 1,
+              dongia: selectedItem.gia,
+            },
+          ],
+          tongtien: selectedItem.gia,
+          diaChi: data.diachi,
         });
-        setOrderDetails((prev) => ({ ...prev, diaChi: data.diachi }));
-      } catch (err) {
-        setMessage('Không thể tải thông tin tài khoản');
       }
-    };
-    fetchInfo();
-  }, []);
+    } catch (err) {
+      if (isMounted) setMessage("Không thể tải thông tin tài khoản");
+    }
+  };
+
+  fetchInfoAndInitOrder();
+
+  return () => {
+    isMounted = false;
+  };
+}, []); // <-- CHỈ CHẠY MỘT LẦN SAU KHI MOUNT
+
 
   const handlePlaceOrder = async () => {
     const item = orderDetails.items[0];
