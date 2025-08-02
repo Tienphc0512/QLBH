@@ -16,7 +16,7 @@ import DangNhap from "./components/DangNhap";
 import DangKy from "./components/DangKy";
 
 import Chitietsanpham from "./components/Chitietsanpham";
-import Danhmuc from "./components/Danhmuc";
+import Danhmuc from "./components/Danhmucsp";
 import Sanpham from "./components/Sanpham";
 import LichSuChatBot from "./components/LichSuChatBot";
 import TimKiem from "./components/TimKiem"; 
@@ -115,6 +115,7 @@ function MainNavigator() {
           <Stack.Screen name="Chatbot" component={Chatbot} options={{ title: "Chat với AI" }} />
           <Stack.Screen name="Chi tiết sản phẩm" component={Chitietsanpham} options={{ title: "Chi tiết sản phẩm" }} />
           <Stack.Screen name="Sản phẩm" component={Sanpham} options={{ title: "Sản phẩm" }} />
+          <Stack.Screen name="Danh mục sản phẩm" component={Danhmuc} options={{ title: "Danh mục sản phẩm" }} />
         
           
         </>
