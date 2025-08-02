@@ -19,7 +19,7 @@ import { useAuth } from '../context/Auth';
 
 const DEFAULT_IMAGE = 'https://via.placeholder.com/150';
 
-const ChiTietSanPhamScreen = () => {
+const ChiTietSanPham = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { item } = route.params;
@@ -72,19 +72,26 @@ const handleChangeSoluong = (text, productId, max) => {
 
   if (!text || isNaN(newValue) || newValue <= 0) {
    //nếu text rỗng hoặc không phải số, đặt về 1
-    setSoluong(1); 
-// khi nào nhập đúng số khác thì chuyển qua số đó
+    setSoluong((prev) => ({
+      ...prev,
+      [productId]: '',
+    }));
     return;
   }
 
   if (newValue > max) {
     Alert.alert('Thông báo', `Số lượng vượt quá tồn kho! (Tối đa: ${max})`);
-    setSoluong(max);
+     setSoluong((prev) => ({
+      ...prev,
+      [productId]: max,
+    }));
   } else {
-    setSoluong(newValue);
-  }
+    setSoluong((prev) => ({
+      ...prev,
+      [productId]: newValue,
+    }));
+}
 };
-
 
   const handleOrderNow = () => {
     navigation.navigate('Đặt hàng', {
@@ -227,4 +234,4 @@ const styles = StyleSheet.create({
 
 });
 
-export default ChiTietSanPhamScreen;
+export default ChiTietSanPham;
