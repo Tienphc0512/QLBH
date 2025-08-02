@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 // PostgreSQL Pool
 const pool = new Pool({
   user: "postgres",
-  host: "172.23.46.76",  // hoặc 127.0.0.1
+  host: "172.23.45.157",  // hoặc 127.0.0.1
   database: "ttnt",
   password: "051203",
   port: 5432,
