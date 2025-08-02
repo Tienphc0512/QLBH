@@ -124,7 +124,7 @@ const handleChangeSoluong = (text, productId, max) => {
   };
 
 const handleSelectDanhMuc = (selectedDanhMuc) => {
-  navigation.navigate('Sản phẩm', { danhMucId: selectedDanhMuc.id });
+  navigation.navigate('Danh mục sản phẩm', { danhMucId: selectedDanhMuc.id });
 };
 
 
@@ -165,7 +165,7 @@ const handleSelectDanhMuc = (selectedDanhMuc) => {
         renderItem={({ item }) => (
          <TouchableOpacity
   style={styles.categoryButton}
-  onPress={() => handleSelectDanhMuc(item.id)}
+  onPress={() => handleSelectDanhMuc(item)}
 >
   <Text style={styles.categoryText}>{item.ten_san_pham}</Text>
 </TouchableOpacity>
