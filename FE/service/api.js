@@ -7,7 +7,7 @@ const BASE_URL = "http://192.168.100.7:3000"; // IP của máy Windows trong m�
 export async function loginUser(username, password) {
   try {
     const response = await axios.post(`${BASE_URL}/api/dangnhap`, {
-      hoten: username,
+      username: username,
       matkhau: password
     }, 
   {
@@ -27,30 +27,26 @@ export async function loginUser(username, password) {
 }
 
 // api đăng ký
-export async function registerUser(username, password, email, phone, addr) {
+export async function registerUser(username, password, email, phone, fullname = "") {
   try {
     const response = await axios.post(`${BASE_URL}/api/dangky`, {
-      hoten: username,
-      matkhau: password,
-      email: email,
+      username,
+      hoten: fullname,
       sdt: phone,
-      diachi: addr
-    }, 
-  {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
-    return response.data; 
+      email,
+      matkhau: password,
+      // diachi: addr
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
   } catch (error) {
-    // Kiểm tra có phản hồi từ server không
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.error || 'Đăng ký thất bại');
-    } else {
-      throw new Error('Không thể kết nối đến máy chủ');
-    }
+    throw new Error(error.response?.data?.error || "Đăng ký thất bại");
   }
 }
+
 
 //api xem tài khoản 
 export async function fetchTaiKhoan(token) {
@@ -64,6 +60,84 @@ export async function fetchTaiKhoan(token) {
   } catch (error) {
     if (error.response && error.response.data) {
       throw new Error(error.response.data.error || 'Lấy tài khoản thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+
+//thêm api xem địa chỉ 
+
+export async function addDiaChi({ diachi, macdinh }, token) {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/diachi`, {
+      diachi,
+      macdinh
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response?.data) {
+      throw new Error(error.response.data.error || 'Thêm địa chỉ thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+//xem địa chỉ
+export async function fetchDiaChi(token) {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/diachi`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response?.data) {
+      throw new Error(error.response.data.error || 'Lấy địa chỉ thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+//sửa điaị chỉ
+export async function updateDiaChi(id, { diachi, macdinh }, token) {
+  try {
+    const response = await axios.put(`${BASE_URL}/api/diachi/${id}`, {
+      diachi,
+      macdinh
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response?.data) {
+      throw new Error(error.response.data.error || 'Cập nhật địa chỉ thất bại');
+    } else {
+      throw new Error('Không thể kết nối đến máy chủ');
+    }
+  }
+}
+//xóa địa chỉ
+export async function deleteDiaChi(id, token) {
+  try {
+    const response = await axios.delete(`${BASE_URL}/api/diachi/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response?.data) {
+      throw new Error(error.response.data.error || 'Xóa địa chỉ thất bại');
     } else {
       throw new Error('Không thể kết nối đến máy chủ');
     }

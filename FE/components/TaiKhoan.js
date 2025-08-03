@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, Text, Button, ActivityIndicator, StyleSheet, Alert, ScrollView } from 'react-native';
 import { fetchTaiKhoan, updateTaiKhoan } from '../service/api';
 import { useAuth } from '../context/Auth';
+import DiaChiModal from './DiaChiModal .js';
+
 
 const TaiKhoan = () => {
     const [formData, setFormData] = useState({
@@ -14,6 +16,8 @@ const TaiKhoan = () => {
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
     const { logout, token } = useAuth();
+    const [showDiaChiModal, setShowDiaChiModal] = useState(false);
+
 
 
     useEffect(() => {
@@ -53,6 +57,7 @@ const TaiKhoan = () => {
     if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
 
     return (
+        <>
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.label}>Họ tên</Text>
             <TextInput
@@ -89,14 +94,6 @@ const TaiKhoan = () => {
                 secureTextEntry
             />
 
-            <Text style={styles.label}>Địa chỉ</Text>
-            <TextInput
-                style={styles.input}
-                value={formData.diachi}
-                onChangeText={text => handleChange('diachi', text)}
-                placeholder="Nhập địa chỉ"
-            />
-
             <View style={styles.buttonContainer}>
                 <Button
                     title={updating ? 'Đang cập nhật...' : 'Cập nhật tài khoản'}
@@ -105,6 +102,11 @@ const TaiKhoan = () => {
                     disabled={updating}
                 />
             </View>
+            
+<Text style={styles.label}>Địa chỉ</Text>
+<TouchableOpacity onPress={() => setShowDiaChiModal(true)}>
+  <Text style={styles.link}>Quản lý địa chỉ ➤</Text>
+</TouchableOpacity>
 
             <View style={styles.logoutContainer}>
                 <Button
@@ -114,6 +116,11 @@ const TaiKhoan = () => {
                 />
             </View>
         </ScrollView>
+        <DiaChiModal
+  visible={showDiaChiModal}
+  onClose={() => setShowDiaChiModal(false)}
+/>
+</>
     );
 };
 
@@ -139,6 +146,12 @@ const styles = StyleSheet.create({
     logoutContainer: {
         marginTop: 10,
     },
+    link: {
+  color: '#007bff',
+  fontWeight: 'bold',
+  marginBottom: 10,
+}
+
 });
 
 export default TaiKhoan;

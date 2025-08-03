@@ -48,7 +48,7 @@ const verifyToken = (req, res, next) => {
 
 // Đăng ký
 app.post("/api/dangky", async (req, res) => {
-  const { hoten, sdt, email, matkhau, diachi } = req.body;
+  const { hoten, sdt, email, matkhau, diachi, username } = req.body;
 
     // Kiểm tra định dạng email
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -63,21 +63,25 @@ app.post("/api/dangky", async (req, res) => {
   // }
   try {
      // Kiểm tra xem tên đăng nhập đã tồn tại chưa
-    const result = await pool.query("SELECT * FROM nguoidung WHERE hoten = $1", [hoten]);
-    if (result.rows.length > 0) {
-      return res.status(400).json({ error: "Tên này đã tồn tại" });
-    }
+    const result = await pool.query("SELECT * FROM nguoidung WHERE username = $1", [username]);
+if (result.rows.length > 0) {
+  return res.status(400).json({ error: "Tên đăng nhập đã tồn tại" });
+}
+
     //hash mk
     const hashedPassword = await bcrypt.hash(matkhau, 10);
     //thêm ng dùng vào csdl
-    await pool.query(
-      "INSERT INTO nguoidung (hoten, sdt, email, matkhau, diachi) VALUES ($1, $2, $3, $4, $5)",
-      [hoten, sdt, email, hashedPassword, diachi]
-    );
+   await pool.query(
+  "INSERT INTO nguoidung (username, hoten, sdt, email, matkhau, diachi) VALUES ($1, $2, $3, $4, $5, $6)",
+  [username, hoten, sdt, email, hashedPassword, diachi]
+);
+
     res.status(201).json({ message: "Đăng ký người dùng thành công" });
   } catch (err) {
-    res.status(400).json({ error: "Username already exists or invalid" });
-  }
+  console.error('Lỗi khi đăng ký người dùng:', err.message);
+  res.status(500).json({ error: "Lỗi máy chủ, vui lòng thử lại sau" });
+}
+
 });
 
 // Đăng nhập
@@ -99,47 +103,146 @@ app.post("/api/dangnhap", async (req, res) => {
   res.json({ token, userId: user.id  });
 });
 
+//ds địa chỉ
+app.get('/api/diachi', verifyToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM diachi WHERE user_id = $1 ORDER BY macdinh DESC, id ASC',
+      [req.userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Lỗi khi lấy địa chỉ' });
+  }
+});
+
+//thêm địa chỉ mới
+app.post('/api/diachi', verifyToken, async (req, res) => {
+  const { diachi, macdinh } = req.body;
+
+  try {
+    // Nếu địa chỉ mới là mặc định, cập nhật các địa chỉ khác không mặc định
+    if (macdinh) {
+      await pool.query(
+        'UPDATE diachi SET macdinh = FALSE WHERE user_id = $1',
+        [req.userId]
+      );
+    }
+
+    const result = await pool.query(
+      'INSERT INTO diachi (user_id, diachi, macdinh) VALUES ($1, $2, $3) RETURNING *',
+      [req.userId, diachi, macdinh || false]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Lỗi khi thêm địa chỉ' });
+  }
+});
+
+// edit
+app.put('/api/diachi/:id', verifyToken, async (req, res) => {
+  const { diachi, macdinh } = req.body;
+  const { id } = req.params;
+
+  try {
+    // Kiểm tra địa chỉ thuộc về user
+    const check = await pool.query(
+      'SELECT * FROM diachi WHERE id = $1 AND user_id = $2',
+      [id, req.userId]
+    );
+    if (check.rowCount === 0) return res.status(404).json({ error: 'Không tìm thấy địa chỉ' });
+
+    // Nếu là mặc định, unset các cái khác
+    if (macdinh) {
+      await pool.query(
+        'UPDATE diachi SET macdinh = FALSE WHERE user_id = $1',
+        [req.userId]
+      );
+    }
+
+    await pool.query(
+      'UPDATE diachi SET diachi = $1, macdinh = $2 WHERE id = $3',
+      [diachi, macdinh || false, id]
+    );
+    res.json({ message: 'Cập nhật địa chỉ thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Lỗi khi cập nhật địa chỉ' });
+  }
+});
+ //xóa địa chỉ
+app.delete('/api/diachi/:id', verifyToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM diachi WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Địa chỉ không tồn tại hoặc không thuộc về bạn' });
+    }
+
+    res.json({ message: 'Đã xóa địa chỉ thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Lỗi khi xóa địa chỉ' });
+  }
+});
+
 // xem thông tin acc của mình
 app.get('/api/taikhoan', verifyToken, async (req, res) => {
   try {
-    const userId = req.userId;
-    const result = await pool.query(
-      'SELECT id, hoten, email, sdt, diachi FROM nguoidung WHERE id = $1',
-      [userId] // Lấy thông tin của người dùng hiện tại
+    const userResult = await pool.query(
+      'SELECT id, hoten, email, sdt FROM nguoidung WHERE id = $1',
+      [req.userId]
     );
-    res.json(result.rows[0]); // Trả về dữ liệu người dùng
+
+    const diachiResult = await pool.query(
+      'SELECT * FROM diachi WHERE user_id = $1 ORDER BY macdinh DESC, id ASC',
+      [req.userId]
+    );
+
+    res.json({
+      ...userResult.rows[0],
+      diachi: diachiResult.rows, // Trả về toàn bộ danh sách địa chỉ
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Lỗi lấy dữ liệu người dùng' });
   }
 });
 
+
 // cập nhật thông tin acc
+
 app.put('/api/taikhoan', verifyToken, async (req, res) => {
-  const { hoten, sdt, email, matkhau, diachi } = req.body;
+  const { hoten, sdt, email, matkhau } = req.body;
 
   try {
     let query = '';
     let values = [];
 
-   if (matkhau) {
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(matkhau, salt);
-  query = `
-    UPDATE nguoidung 
-    SET hoten = $1, email = $2, sdt = $3, matkhau = $4, diachi = $5
-    WHERE id = $6
-  `;
-  values = [hoten, email, sdt, hashedPassword, diachi, req.userId];
-} else {
-  query = `
-    UPDATE nguoidung 
-    SET hoten = $1, email = $2, sdt = $3, diachi = $4
-    WHERE id = $5
-  `;
-  values = [hoten, email, sdt, diachi, req.userId];
-}
-
+    if (matkhau) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(matkhau, salt);
+      query = `
+        UPDATE nguoidung 
+        SET hoten = $1, email = $2, sdt = $3, matkhau = $4
+        WHERE id = $5
+      `;
+      values = [hoten, email, sdt, hashedPassword, req.userId];
+    } else {
+      query = `
+        UPDATE nguoidung 
+        SET hoten = $1, email = $2, sdt = $3
+        WHERE id = $4
+      `;
+      values = [hoten, email, sdt, req.userId];
+    }
 
     await pool.query(query, values);
 
@@ -151,15 +254,15 @@ app.put('/api/taikhoan', verifyToken, async (req, res) => {
 });
 
 // xem tất cả acc với quyền admin
-app.get("/api/all_users", verifyToken, async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM nguoidung");
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Lỗi khi lấy người dùng" });
-  }
-});
+// app.get("/api/all_users", verifyToken, async (req, res) => {
+//   try {
+//     const result = await pool.query("SELECT * FROM nguoidung");
+//     res.json(result.rows);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Lỗi khi lấy người dùng" });
+//   }
+// });
 
 //xem tất cả sản phẩm ở home
 app.get('/api/sanpham', verifyToken, async (req, res) => {
@@ -481,19 +584,37 @@ app.get("/api/chi_tiet_don_hang/:id", verifyToken, async (req, res) => {
 });
  
 // xem lịch sử đặt hàng
+// app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
+//   try {
+//     const userId = req.userId;
+//     const result = await pool.query( 
+//       "SELECT * FROM lichsudathang WHERE user_id = $1 ORDER BY created_at DESC",
+//       [userId]
+//     );
+//     res.json(result.rows);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Lỗi khi lấy lịch sử đặt hàng" });
+//   } 
+// });
+
 app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
   try {
     const userId = req.userId;
-    const result = await pool.query( 
-      "SELECT * FROM lichsudathang WHERE user_id = $1 ORDER BY created_at DESC",
+    const result = await pool.query(
+      `SELECT dh.*
+       FROM dathang dh
+       WHERE dh.user_id = $1
+       ORDER BY dh.ngay_dat DESC`,
       [userId]
     );
     res.json(result.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Lỗi khi lấy lịch sử đặt hàng" });
-  } 
+  }
 });
+
 
 // xem lịch sử hủy đơn hàng 
 app.get("/api/chi_tiet_huy_don_hang/:id", verifyToken, async (req, res) => {

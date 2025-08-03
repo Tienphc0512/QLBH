@@ -10,8 +10,7 @@ import {
   Modal,
   ToastAndroid,
   Alert,
-  TextInput,
-  Alert
+  TextInput
 } from 'react-native';
 import { fetchSanPham } from '../service/api';
 import { useRoute, useNavigation } from '@react-navigation/native';

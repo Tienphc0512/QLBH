@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { registerUser } from '../service/api'; 
+import { registerUser } from '../service/api';
 
 export default function DangKy() {
     const navigation = useNavigation();
@@ -10,17 +10,17 @@ export default function DangKy() {
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [addr, setAddr] = useState('');
+    const [fullname, setFullname] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const handleRegister = async () => {
-        if (!username || !phone || !password || !email || !addr) {
+        if (!username || !phone || !password || !email || !fullname) {
             Alert.alert('Vui lòng điền đầy đủ thông tin');
             return;
         }
         try {
-            await registerUser(username, password, email, phone, addr);
+            await registerUser(username, password, email, phone, fullname);
             Alert.alert('Đăng ký thành công!');
             navigation.navigate('Đăng nhập'); // hoặc màn hình nào bạn muốn quay lại
 
@@ -41,6 +41,16 @@ export default function DangKy() {
                     placeholder="Tên đăng nhập"
                     value={username}
                     onChangeText={setUsername}
+                    style={styles.input}
+                    placeholderTextColor="#999"
+                />
+            </View>
+            <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#555" style={styles.icon} />
+                <TextInput
+                    placeholder="Họ và tên"
+                    value={fullname}
+                    onChangeText={setFullname}
                     style={styles.input}
                     placeholderTextColor="#999"
                 />
@@ -67,18 +77,8 @@ export default function DangKy() {
                     style={styles.input}
                     placeholderTextColor="#999"
                 />
-            </View>            
-
-            <View style={styles.inputContainer}>
-                <Ionicons name="location-outline" size={20} color="#555" style={styles.icon} />
-                <TextInput
-                    placeholder="Địa chỉ"
-                    value={addr}
-                    onChangeText={setAddr}
-                    style={styles.input}
-                    placeholderTextColor="#999"
-                />
             </View>
+
 
             <View style={styles.inputContainer}>
                 <Ionicons name="lock-closed" size={20} color="#555" style={styles.icon} />
@@ -100,7 +100,7 @@ export default function DangKy() {
 }
 
 const styles = StyleSheet.create({
-    container: {    
+    container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
