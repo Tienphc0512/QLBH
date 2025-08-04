@@ -566,37 +566,55 @@ app.put("/api/thongbao/:id/read", verifyToken, async (req, res) => {
 
 
 // xem chi tiết đặt hàng
-app.get("/api/chi_tiet_don_hang/:id", verifyToken, async (req, res) => {
-  const dathang_id = req.params.id;
-  try {
-    const result = await pool.query(
-      "SELECT * FROM chitietdathang WHERE dathang_id = $1",
-      [dathang_id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Không tìm thấy chi tiết đơn hàng" });
-    }
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Lỗi khi lấy chi tiết đơn hàng" });
-  }
-});
- 
-// xem lịch sử đặt hàng
-// app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
+// app.get("/api/chi_tiet_don_hang/:id", verifyToken, async (req, res) => {
+//   const dathang_id = req.params.id;
 //   try {
-//     const userId = req.userId;
-//     const result = await pool.query( 
-//       "SELECT * FROM lichsudathang WHERE user_id = $1 ORDER BY created_at DESC",
-//       [userId]
+//     const result = await pool.query(
+//       "SELECT * FROM chitietdathang WHERE dathang_id = $1",
+//       [dathang_id]
 //     );
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: "Không tìm thấy chi tiết đơn hàng" });
+//     }
 //     res.json(result.rows);
 //   } catch (err) {
 //     console.error(err);
-//     res.status(500).json({ error: "Lỗi khi lấy lịch sử đặt hàng" });
-//   } 
+//     res.status(500).json({ error: "Lỗi khi lấy chi tiết đơn hàng" });
+//   }
 // });
+ 
+app.get("/api/chi_tiet_don_hang/:id", verifyToken, async (req, res) => {
+  const userId = req.userId; // lấy từ token
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+        dh.id AS dathang_id,
+        dh.ngaydat,
+        dh.trangthai,
+        dh.tongtien,
+        dh.hinhthuc_thanhtoan,
+        sp.ten AS tensanpham,
+        ctdh.soluong,
+        ctdh.dongia,
+        (ctdh.soluong * ctdh.dongia) AS thanhtien
+      FROM dathang dh
+      JOIN chitietdathang ctdh ON ctdh.dathang_id = dh.id
+      JOIN sanpham sp ON sp.id = ctdh.sanpham_id
+      WHERE dh.user_id = $1
+      ORDER BY dh.ngaydat DESC
+      `,
+      [userId] // đây là $1
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Không thể lấy danh sách đơn hàng" });
+  }
+});
+
 
 app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
   try {
