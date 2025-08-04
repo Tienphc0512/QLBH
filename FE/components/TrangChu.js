@@ -49,7 +49,7 @@ const [selectedProductId, setSelectedProductId] = useState(null);
   }, [token]); // depend on token để re-run khi token sẵn sàng
 
 
-
+// hàm xử lý khi user tăng số lượng sp
 const handleIncrease = (productId, tonKho) => {
   setSoluongs((prev) => {
     const current = prev[productId] || 1;
@@ -61,6 +61,7 @@ const handleIncrease = (productId, tonKho) => {
   });
 };
 
+//hàm giảm số lượng sp
 const handleDecrease = (productId) => {
   setSoluongs((prev) => {
     const current = prev[productId] || 1;
@@ -68,6 +69,7 @@ const handleDecrease = (productId) => {
   });
 };
 
+// hàm xác nhận khi user thêm sp vào giỏ vì có sử dụng modal
 const handleConfirmAddToCart = (sp) => {
   const sl = soluongs[sp.id] || 1;
   const tonKho = parseInt(sp.soluong);
@@ -82,7 +84,7 @@ console.log('Add to cart:', sp);
   setSelectedProductId(null); // ẩn lại khung nhập sau khi thêm
 };
 
-
+//thêm sp vào giỏ
 const handleAddToCart = (item) => {
   setSelectedProduct(item);
   setShowModal(true);
@@ -119,12 +121,36 @@ const handleChangeSoluong = (text, productId, max) => {
 };
 
 
-  const handleOrderNow = (item) => {
-    navigation.navigate("Đặt hàng", { item });
-  };
+  // const handleOrderNow = (item) => {
+  //   navigation.navigate("Đặt hàng", { item, soluong: soluongs[item.id] || 1 });
+  // };
 
 const handleSelectDanhMuc = (selectedDanhMuc) => {
   navigation.navigate('Danh mục sản phẩm', { danhMucId: selectedDanhMuc.id });
+};
+
+
+const handleOrderNow = (item) => {
+  const sl = parseInt(soluongs?.[item.id]);
+
+  const validQty =
+    !isNaN(sl) && sl > 0
+      ? sl
+      : parseInt(item.soluong) > 0
+      ? 1
+      : 0;
+
+  if (validQty <= 0) {
+    Alert.alert("Lỗi", "Sản phẩm không khả dụng để mua.");
+    return;
+  }
+
+  navigation.navigate("Đặt hàng", {
+    item: {
+      ...item,
+      soluong: validQty,
+    },
+  });
 };
 
 
@@ -197,9 +223,10 @@ const handleSelectDanhMuc = (selectedDanhMuc) => {
   <Text style={styles.buttonText}>Thêm</Text>
 </TouchableOpacity>
 
-        <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(sp)}>
-          <Text style={styles.buttonText}>Mua</Text>
-        </TouchableOpacity>
+        <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(item)}>
+  <Text style={styles.buttonText}>Mua</Text>
+</TouchableOpacity>
+
       </View>
       <TouchableOpacity
         style={styles.detailButton}

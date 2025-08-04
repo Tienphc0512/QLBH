@@ -1,7 +1,7 @@
 import axios from 'axios'; 
 
-const BASE_URL = "http://192.168.100.7:3000"; // IP của máy Windows trong mạng Wi-Fi
-// const BASE_URL = "http://192.168.1.13:3000";
+// const BASE_URL = "http://192.168.100.7:3000"; // IP của máy Windows trong mạng Wi-Fi
+const BASE_URL = "http://10.0.2.2:3000"; //ip net
 
 //api đăng nhập
 export async function loginUser(username, password) {

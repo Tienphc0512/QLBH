@@ -22,7 +22,7 @@ export default function DangKy() {
         try {
             await registerUser(username, password, email, phone, fullname);
             Alert.alert('Đăng ký thành công!');
-            navigation.navigate('Đăng nhập'); // hoặc màn hình nào bạn muốn quay lại
+            navigation.navigate('Đăng nhập'); 
 
         } catch (error) {
             setError(error.response?.data?.message || 'Đăng nhập thất bại');

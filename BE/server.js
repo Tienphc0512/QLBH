@@ -18,7 +18,8 @@ app.use(bodyParser.json());
 // PostgreSQL Pool
 const pool = new Pool({
   user: "postgres",
-  host: "172.23.45.157",  // hoặc 127.0.0.1
+  // host: "172.23.45.157",  // hoặc 127.0.0.1
+  host: "localhost", // nếu chạy trên máy local thì dùng localhost
   database: "ttnt",
   password: "051203",
   port: 5432,
@@ -48,7 +49,7 @@ const verifyToken = (req, res, next) => {
 
 // Đăng ký
 app.post("/api/dangky", async (req, res) => {
-  const { hoten, sdt, email, matkhau, diachi, username } = req.body;
+  const { hoten, sdt, email, matkhau, username } = req.body;
 
     // Kiểm tra định dạng email
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -72,8 +73,8 @@ if (result.rows.length > 0) {
     const hashedPassword = await bcrypt.hash(matkhau, 10);
     //thêm ng dùng vào csdl
    await pool.query(
-  "INSERT INTO nguoidung (username, hoten, sdt, email, matkhau, diachi) VALUES ($1, $2, $3, $4, $5, $6)",
-  [username, hoten, sdt, email, hashedPassword, diachi]
+  "INSERT INTO nguoidung (username, hoten, sdt, email, matkhau) VALUES ($1, $2, $3, $4, $5)",
+  [username, hoten, sdt, email, hashedPassword]
 );
 
     res.status(201).json({ message: "Đăng ký người dùng thành công" });
@@ -86,10 +87,10 @@ if (result.rows.length > 0) {
 
 // Đăng nhập
 app.post("/api/dangnhap", async (req, res) => {
-  const { hoten, matkhau } = req.body;
+  const { username, matkhau } = req.body;
   const result = await pool.query(
-    "SELECT * FROM nguoidung WHERE TRIM(LOWER(hoten)) = LOWER(TRIM($1))",
-    [hoten]
+    "SELECT * FROM nguoidung WHERE TRIM(LOWER(username)) = LOWER(TRIM($1))",
+    [username]
   );
 
   if (result.rows.length === 0)

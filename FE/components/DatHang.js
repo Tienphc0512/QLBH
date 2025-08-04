@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan } from '../service/api';
 import { useAuth } from '../context/Auth';
+import { fetchDiaChi } from '../service/api';
 
 
 export default function DatHang({ route }) {
@@ -30,13 +31,18 @@ export default function DatHang({ route }) {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
   const selectedItem = route?.params?.item;
+  const [diaChiList, setDiaChiList] = useState([]);
+const [selectedDiaChiId, setSelectedDiaChiId] = useState(null);
 
- useEffect(() => {
+
+useEffect(() => {
   let isMounted = true;
 
   const fetchInfoAndInitOrder = async () => {
     try {
       const data = await fetchTaiKhoan(token);
+      const diachiData = await fetchDiaChi(token);
+
       if (!isMounted) return;
 
       setUserInfo({
@@ -45,21 +51,30 @@ export default function DatHang({ route }) {
         diachi: data.diachi,
       });
 
-      if (selectedItem) {
-        setOrderDetails({
-          items: [
-            {
-              sanpham_id: selectedItem.id,
-              soluong: 1,
-              dongia: selectedItem.gia,
-            },
-          ],
-          tongtien: selectedItem.gia,
-          diaChi: data.diachi,
-        });
+      setDiaChiList(diachiData || []);
+
+      const defaultDiaChi = diachiData.find((dc) => dc.macdinh) || diachiData[0];
+
+      if (!selectedItem || selectedItem.soluong == null || isNaN(selectedItem.soluong)) {
+        Alert.alert("Lỗi dữ liệu", "Sản phẩm không có thông tin tồn kho.");
+        return;
       }
+
+      setOrderDetails({
+        items: [
+          {
+            sanpham_id: selectedItem.id,
+            soluong: 1,
+            dongia: selectedItem.gia,
+          },
+        ],
+        tongtien: selectedItem.gia,
+        diaChi: defaultDiaChi?.diachi || '',
+      });
+
+      setSelectedDiaChiId(defaultDiaChi?.id ?? null);
     } catch (err) {
-      if (isMounted) setMessage("Không thể tải thông tin tài khoản");
+      if (isMounted) setMessage("Không thể tải thông tin tài khoản hoặc địa chỉ.");
     }
   };
 
@@ -68,7 +83,8 @@ export default function DatHang({ route }) {
   return () => {
     isMounted = false;
   };
-}, []); 
+}, []);
+
 
 
   const handlePlaceOrder = async () => {
@@ -160,82 +176,77 @@ export default function DatHang({ route }) {
       <Text>Địa chỉ: {userInfo.diachi}</Text>
 
 <Text style={{ marginTop: 15 }}>Số lượng:</Text>
-<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 5 }}>
-  <TouchableOpacity
-    onPress={() => {
-      const currentQty = orderDetails.items[0].soluong;
-      if (currentQty > 1) {
-        const newQty = currentQty - 1;
-        setOrderDetails((prev) => ({
-          ...prev,
-          items: [{ ...prev.items[0], soluong: newQty }],
-          tongtien: newQty * selectedItem.gia,
-        }));
-      }
-    }}
-    style={styles.qtyButton}
-  >
-    <Text style={styles.qtyText}>−</Text>
-  </TouchableOpacity>
 
-  <Text style={{ marginHorizontal: 20, fontSize: 16 }}>
-    {orderDetails.items[0].soluong}
-  </Text>
+{orderDetails.items.length > 0 && selectedItem && (
+  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 5 }}>
+    <TouchableOpacity
+      onPress={() => {
+        const currentQty = orderDetails.items[0]?.soluong ?? 1;
+        if (currentQty > 1) {
+          const newQty = currentQty - 1;
+          setOrderDetails((prev) => ({
+            ...prev,
+            items: [{ ...prev.items[0], soluong: newQty }],
+            tongtien: newQty * selectedItem.gia,
+          }));
+        }
+      }}
+      style={styles.qtyButton}
+    >
+      <Text style={styles.qtyText}>−</Text>
+    </TouchableOpacity>
 
-  <TouchableOpacity
-    onPress={() => {
-      const currentQty = orderDetails.items[0].soluong;
-      if (currentQty < selectedItem.soluong) {
-        const newQty = currentQty + 1;
-        setOrderDetails((prev) => ({
-          ...prev,
-          items: [{ ...prev.items[0], soluong: newQty }],
-          tongtien: newQty * selectedItem.gia,
-        }));
-      } else {
-        Alert.alert('Thông báo', 'Số lượng vượt quá tồn kho!');
-      }
-    }}
-    style={styles.qtyButton}
-  >
-    <Text style={styles.qtyText}>+</Text>
-  </TouchableOpacity>
-</View>
+    <Text style={{ marginHorizontal: 20, fontSize: 16 }}>
+      {orderDetails.items?.[0]?.soluong ?? 1}
+    </Text>
 
+    <TouchableOpacity
+      onPress={() => {
+        const currentQty = orderDetails.items[0]?.soluong ?? 1;
+        if (currentQty < selectedItem.soluong) {
+          const newQty = currentQty + 1;
+          setOrderDetails((prev) => ({
+            ...prev,
+            items: [{ ...prev.items[0], soluong: newQty }],
+            tongtien: newQty * selectedItem.gia,
+          }));
+        } else {
+          Alert.alert('Thông báo', 'Số lượng vượt quá tồn kho!');
+        }
+      }}
+      style={styles.qtyButton}
+    >
+      <Text style={styles.qtyText}>+</Text>
+    </TouchableOpacity>
 
-      {error ? (
-        <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>
-      ) : null}
+    <Text style={{ marginTop: 15, fontWeight: 'bold' }}>Chọn địa chỉ giao hàng:</Text>
 
-      <Text>Tổng tiền: {orderDetails.tongtien?.toLocaleString() || 0} VNĐ</Text>
+{diaChiList.length === 0 ? (
+  <Text style={{ fontStyle: 'italic' }}>Chưa có địa chỉ. Vui lòng thêm.</Text>
+) : (
+  diaChiList.map((dc) => (
+    <TouchableOpacity
+      key={dc.id}
+      onPress={() => {
+        setSelectedDiaChiId(dc.id);
+        setOrderDetails((prev) => ({ ...prev, diaChi: dc.diachi }));
+      }}
+      style={{
+        padding: 10,
+        marginVertical: 5,
+        borderWidth: 1,
+        borderColor: selectedDiaChiId === dc.id ? 'blue' : '#ccc',
+        borderRadius: 5,
+      }}
+    >
+      <Text>{dc.diachi}</Text>
+      {dc.macdinh && <Text style={{ color: 'green' }}>[Mặc định]</Text>}
+    </TouchableOpacity>
+  ))
+)}
 
-
-      <Button title="Đặt hàng" onPress={handlePlaceOrder} disabled={loading} />
-
-      {orderId !== '' && (
-        <View style={{ marginVertical: 20 }}>
-          <Text style={styles.label}>Xem chi tiết đơn hàng</Text>
-          <Button title="Xem chi tiết" onPress={handleFetchOrderDetails} disabled={loading} />
-        </View>
-      )}
-
-      {orderId !== '' && orderInfo && (
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.label}>Chi tiết đơn hàng:</Text>
-          {orderInfo.map((item, index) => (
-            <View key={index} style={styles.orderBox}>
-              <Text>Sản phẩm ID: {item.sanpham_id}</Text>
-              <Text>Số lượng: {item.soluong}</Text>
-              <Text>Đơn giá: {item.dongia}</Text>
-              <Text>TT thanh toán: {item.tinhtrang_thanhtoan}</Text>
-              <Text>Trạng thái đơn hàng: {item.trangthai || 'choxuly'}</Text>
-            </View>
-          ))}
-          {canCancel && (
-            <Button title="Huỷ đơn hàng" color="red" onPress={handleCancelOrder} />
-          )}
-        </View>
-      )}
+  </View>
+)}
 
 
       {/* Modal chỉnh sửa thông tin khách hàng */}
