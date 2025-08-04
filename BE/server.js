@@ -198,7 +198,7 @@ app.delete('/api/diachi/:id', verifyToken, async (req, res) => {
 app.get('/api/taikhoan', verifyToken, async (req, res) => {
   try {
     const userResult = await pool.query(
-      'SELECT id, hoten, email, sdt FROM nguoidung WHERE id = $1',
+      'SELECT id, username, hoten, email, sdt FROM nguoidung WHERE id = $1',
       [req.userId]
     );
 
@@ -219,9 +219,8 @@ app.get('/api/taikhoan', verifyToken, async (req, res) => {
 
 
 // cập nhật thông tin acc
-
 app.put('/api/taikhoan', verifyToken, async (req, res) => {
-  const { hoten, sdt, email, matkhau } = req.body;
+  const { username, hoten, sdt, email, matkhau } = req.body;
 
   try {
     let query = '';
@@ -232,17 +231,17 @@ app.put('/api/taikhoan', verifyToken, async (req, res) => {
       const hashedPassword = await bcrypt.hash(matkhau, salt);
       query = `
         UPDATE nguoidung 
-        SET hoten = $1, email = $2, sdt = $3, matkhau = $4
-        WHERE id = $5
+        SET username = $1, hoten = $2, email = $3, sdt = $4, matkhau = $5
+        WHERE id = $6
       `;
-      values = [hoten, email, sdt, hashedPassword, req.userId];
+      values = [username, hoten, email, sdt, hashedPassword, req.userId];
     } else {
       query = `
         UPDATE nguoidung 
-        SET hoten = $1, email = $2, sdt = $3
-        WHERE id = $4
+        SET username = $1, hoten = $2, email = $3, sdt = $4
+        WHERE id = $5
       `;
-      values = [hoten, email, sdt, req.userId];
+      values = [username, hoten, email, sdt, req.userId];
     }
 
     await pool.query(query, values);
