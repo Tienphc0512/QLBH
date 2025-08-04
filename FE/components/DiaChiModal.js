@@ -15,7 +15,7 @@ export default function DiaChiModal({ visible, onClose }) {
     setLoading(true);
     try {
       const data = await fetchDiaChi(token);
-          console.log('Dữ liệu địa chỉ:', data); // ✅ thêm dòng này
+          // console.log('Dữ liệu địa chỉ:', data); 
 
       setList(data);
     } catch (err) {
@@ -126,7 +126,7 @@ export default function DiaChiModal({ visible, onClose }) {
                 ) : (
                   <>
                     <Text style={styles.text}>Địa chỉ: {item.diachi}</Text>
-                    <Text style={styles.text}>Mặc định: {item.macdinh ? '✅' : '❌'}</Text>
+                    <Text style={styles.text}>Mặc định: {item.macdinh ? 'Chính' : 'Phụ'}</Text>
                     <View style={styles.buttonRow}>
                       <TouchableOpacity onPress={() => setEditIndex(index)} style={styles.editBtn}>
                         <Text style={styles.btnText}>Sửa</Text>

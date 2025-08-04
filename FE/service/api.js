@@ -1,7 +1,7 @@
 import axios from 'axios'; 
 
-// const BASE_URL = "http://192.168.100.7:3000"; // IP của máy Windows trong mạng Wi-Fi
-const BASE_URL = "http://10.0.2.2:3000"; //ip net
+const BASE_URL = "http://192.168.100.8:3000"; // IP của máy Windows trong mạng Wi-Fi
+// const BASE_URL = "http://10.0.2.2:3000"; //ip net
 
 //api đăng nhập
 export async function loginUser(username, password) {
@@ -292,15 +292,13 @@ export async function fetchOrderHistory(token) {
   }
 }
 
-//api dặt hàng
 export async function placeOrder(orderDetails, token) { 
   try {
     const response = await axios.post(`${BASE_URL}/api/dat_hang`, orderDetails, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ products }), // cấu trúc gửi về server
+      }
     });
     return response.data;
   } catch (error) {
@@ -311,6 +309,7 @@ export async function placeOrder(orderDetails, token) {
     }
   }
 }
+
 
 // api xem chitiet đặt hàng
 export async function fetchOrderDetails(orderId, token) {

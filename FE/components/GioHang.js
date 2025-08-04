@@ -85,7 +85,7 @@ const handlePlaceOrder = async () => {
         style={styles.checkbox}
       />
       <View style={{ flex: 1 }}>
-        <Text style={styles.itemName}>{item.ten}</Text>
+        <Text style={styles.itemName}>{item.ten} {item.ten_san_pham}</Text>
         <Text>Số lượng: {item.soluong}</Text>
         <Text>Giá: {item.gia.toLocaleString()} VNĐ</Text>
       </View>

@@ -78,7 +78,7 @@ const handleConfirmAddToCart = (sp) => {
     ToastAndroid.show("Số lượng vượt quá tồn kho!", ToastAndroid.SHORT);
     return;
   }
-console.log('Add to cart:', sp);
+// console.log('Add to cart:', sp);
   addToCart({ ...sp, soluong: sl });
   ToastAndroid.show(`${sp.ten_san_pham} đã được thêm vào giỏ`, ToastAndroid.SHORT);
   setSelectedProductId(null); // ẩn lại khung nhập sau khi thêm
@@ -93,6 +93,7 @@ const handleAddToCart = (item) => {
     [item.id]: prev[item.id] || 1,
   }));
 };
+
 
 // hàm xử lý số lượng khi nhập tay 
 const handleChangeSoluong = (text, productId, max) => {
@@ -130,30 +131,35 @@ const handleSelectDanhMuc = (selectedDanhMuc) => {
 };
 
 // điều hướng qua đặt hàng với item và số lượng đã chọn
-const handleOrderNow = (item) => {
-  const sl = parseInt(soluongs?.[item.id]);
+// const handleOrderNow = (sp) => {
+//   const sl = parseInt(soluongs?.[sp.id]);
 
-  const validQty =
-    !isNaN(sl) && sl > 0
-      ? sl
-      : parseInt(item.soluong) > 0
-      ? 1
-      : 0;
+//   const validQty =
+//     !isNaN(sl) && sl > 0
+//       ? sl
+//       : parseInt(sp.soluong) > 0
+//       ? 1
+//       : 0;
 
-  if (validQty <= 0) {
-    Alert.alert("Lỗi", "Sản phẩm không khả dụng để mua.");
-    return;
-  }
+//   if (validQty <= 0) {
+//     Alert.alert("Lỗi", "Sản phẩm không khả dụng để mua.");
+//     return;
+//   }
 
+//   navigation.navigate("Đặt hàng", {
+//     sp: {
+//       ...sp,
+//       soluong: validQty,
+//     },
+//   });
+// };
+
+const handleOrderNow = (sp) => {
+  // điều hướng qua màn hình Đặt hàng với sản phẩm đã chọn
   navigation.navigate("Đặt hàng", {
-    item: {
-      ...item,
-      soluong: validQty,
-    },
+    sp: sp, // giữ nguyên sản phẩm, không chỉnh sửa 'soluong'
   });
 };
-
-
 
 
 
@@ -223,7 +229,7 @@ const handleOrderNow = (item) => {
   <Text style={styles.buttonText}>Thêm</Text>
 </TouchableOpacity>
 
-        <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(item)}>
+        <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(sp)}>
   <Text style={styles.buttonText}>Mua</Text>
 </TouchableOpacity>
 
