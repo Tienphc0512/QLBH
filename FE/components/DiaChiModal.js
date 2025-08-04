@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { fetchDiaChi, updateDiaChi, deleteDiaChi } from '../service/api';
+import { fetchDiaChi, updateDiaChi, deleteDiaChi, addDiaChi } from '../service/api';
 import { useAuth } from '../context/Auth';
 
 export default function DiaChiModal({ visible, onClose }) {
@@ -8,11 +8,15 @@ export default function DiaChiModal({ visible, onClose }) {
   const [list, setList] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [newDiaChi, setNewDiaChi] = useState('');
+
 
   const loadDiaChi = async () => {
     setLoading(true);
     try {
       const data = await fetchDiaChi(token);
+          console.log('Dữ liệu địa chỉ:', data); // ✅ thêm dòng này
+
       setList(data);
     } catch (err) {
       alert(err.message);
@@ -46,6 +50,32 @@ export default function DiaChiModal({ visible, onClose }) {
     }
   };
 
+  const handleAdd = async () => {
+  if (!newDiaChi.trim()) return alert('Vui lòng nhập địa chỉ');
+
+  try {
+    const response = await fetch('', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ diachi: newDiaChi, macdinh: false }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Thêm địa chỉ thất bại');
+    }
+
+    setNewDiaChi('');
+    loadDiaChi();
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+
   const handleInputChange = (index, key, value) => {
     const updatedList = [...list];
     updatedList[index][key] = value;
@@ -56,6 +86,22 @@ export default function DiaChiModal({ visible, onClose }) {
     <Modal visible={visible} animationType="slide">
       <View style={styles.container}>
         <Text style={styles.title}>Danh sách địa chỉ</Text>
+        <View style={{ marginVertical: 10 }}>
+  <Text style={{ fontWeight: 'bold' }}>Thêm địa chỉ mới</Text>
+  <TextInput
+    value={newDiaChi}
+    onChangeText={setNewDiaChi}
+    placeholder="Nhập địa chỉ mới"
+    style={styles.input}
+  />
+  <TouchableOpacity
+    onPress={handleAdd}
+    style={{ ...styles.saveBtn, marginTop: 5 }}
+  >
+    <Text style={styles.btnText}>Thêm địa chỉ</Text>
+  </TouchableOpacity>
+</View>
+
 
         <ScrollView>
           {loading ? <Text>Đang tải...</Text> :

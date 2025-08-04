@@ -10,10 +10,11 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
+  RefreshControl 
 } from 'react-native';
-import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan } from '../service/api';
+import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan, updateTaiKhoan, fetchDiaChi } from '../service/api';
 import { useAuth } from '../context/Auth';
-import { fetchDiaChi } from '../service/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 export default function DatHang({ route }) {
@@ -27,7 +28,7 @@ export default function DatHang({ route }) {
   const [orderInfo, setOrderInfo] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [userInfo, setUserInfo] = useState({ ten: '', sdt: '', diachi: '' });
+  const [userInfo, setUserInfo] = useState({ username: '', sdt: ''});
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
   const selectedItem = route?.params?.item;
@@ -35,59 +36,99 @@ export default function DatHang({ route }) {
 const [selectedDiaChiId, setSelectedDiaChiId] = useState(null);
 
 
-useEffect(() => {
-  let isMounted = true;
+// useEffect(() => {
+//   let isMounted = true;
 
-  const fetchInfoAndInitOrder = async () => {
-    try {
-      const data = await fetchTaiKhoan(token);
-      const diachiData = await fetchDiaChi(token);
+//   const fetchInfoAndInitOrder = async () => {
+//     try {
+//       const data = await fetchTaiKhoan(token);
+//       // console.log("Tài khoản:", data);
 
-      if (!isMounted) return;
+//       const diachiData = await fetchDiaChi(token);
 
-      setUserInfo({
-        ten: data.hoten,
-        sdt: data.sdt,
-        diachi: data.diachi,
-      });
+//       if (!isMounted) return;
 
-      setDiaChiList(diachiData || []);
+//       setUserInfo({
+//         username: data.username,
+//         sdt: data.sdt
+//         // diachi: data.diachi,
+//       });
 
-      const defaultDiaChi = diachiData.find((dc) => dc.macdinh) || diachiData[0];
+//       setDiaChiList(diachiData || []);
 
-      if (!selectedItem || selectedItem.soluong == null || isNaN(selectedItem.soluong)) {
-        Alert.alert("Lỗi dữ liệu", "Sản phẩm không có thông tin tồn kho.");
-        return;
-      }
+//       const defaultDiaChi = diachiData.find((dc) => dc.macdinh) || diachiData[0];
 
+//       if (!selectedItem || selectedItem.soluong == null || isNaN(selectedItem.soluong)) {
+//         Alert.alert("Lỗi dữ liệu", "Sản phẩm không có thông tin tồn kho.");
+//         return;
+//       }
+
+//       setOrderDetails({
+//         items: [
+//           {
+//             sanpham_id: selectedItem.id,
+//             soluong: 1,
+//             dongia: selectedItem.gia,
+//           },
+//         ],
+//         tongtien: selectedItem.gia,
+//         diaChi: defaultDiaChi?.diachi || '',
+//       });
+
+//       setSelectedDiaChiId(defaultDiaChi?.id ?? null);
+//     } catch (err) {
+//       if (isMounted) setMessage("Không thể tải thông tin tài khoản hoặc địa chỉ.");
+//     }
+//   };
+
+//   fetchInfoAndInitOrder();
+
+//   return () => {
+//     isMounted = false;
+//   };
+// }, []);
+
+
+const fetchInfoAndInitOrder = async () => { // tách ra để sử dụng RefreshControl của rn
+  setLoading(true);
+  try {
+    const data = await fetchTaiKhoan(token);
+    const diachiData = await fetchDiaChi(token);
+
+    setUserInfo({
+      username: data.username,
+      sdt: data.sdt,
+    });
+
+    setDiaChiList(diachiData || []);
+    const defaultDiaChi = diachiData.find((dc) => dc.macdinh) || diachiData[0];
+
+    if (selectedItem && !isNaN(selectedItem.soluong)) {
       setOrderDetails({
-        items: [
-          {
-            sanpham_id: selectedItem.id,
-            soluong: 1,
-            dongia: selectedItem.gia,
-          },
-        ],
+        items: [{
+          sanpham_id: selectedItem.id,
+          soluong: 1,
+          dongia: selectedItem.gia,
+        }],
         tongtien: selectedItem.gia,
         diaChi: defaultDiaChi?.diachi || '',
       });
 
       setSelectedDiaChiId(defaultDiaChi?.id ?? null);
-    } catch (err) {
-      if (isMounted) setMessage("Không thể tải thông tin tài khoản hoặc địa chỉ.");
     }
-  };
+  } catch (err) {
+    setMessage("Không thể tải thông tin tài khoản hoặc địa chỉ.");
+  }
+  setLoading(false);
+};
 
+useEffect(() => {
   fetchInfoAndInitOrder();
-
-  return () => {
-    isMounted = false;
-  };
-}, []);
-
+}, []); // và phải gọi lại khi selectedItem thay đổi 
 
 
   const handlePlaceOrder = async () => {
+    
     const item = orderDetails.items[0];
     if (item.soluong > selectedItem.soluong) {
       setMessage('Số lượng vượt quá tồn kho!');
@@ -98,28 +139,37 @@ useEffect(() => {
     setMessage('');
     try {
       const data = await placeOrder(orderDetails, token);
-      setMessage(`Đặt hàng thành công! Mã đơn hàng: ${data.dathang_id}`);
-      setOrderId(data.dathang_id.toString());
-      setOrderInfo(null);
+const newOrderId = data.dathang_id.toString();
+setOrderId(newOrderId);
+setMessage(`Đặt hàng thành công! Mã đơn hàng: ${newOrderId}`);
+
+try {
+  const details = await fetchOrderDetails(newOrderId, token);
+  setOrderInfo(details);
+} catch (err) {
+  Alert.alert("Lỗi", "Không thể tải chi tiết đơn hàng.");
+}
+
     } catch (err) {
       setMessage(err.message);
     }
     setLoading(false);
   };
 
-  const handleFetchOrderDetails = async () => {
-    setLoading(true);
-    setMessage('');
-    try {
-      const data = await fetchOrderDetails(orderId, token);
-      setOrderInfo(data);
-    } catch (err) {
-      setMessage(err.message);
-      setOrderInfo(null);
-    }
-    setLoading(false);
-  };
+const handleFetchOrderDetailsWithId = async (id) => {
+  setLoading(true);
+  setMessage('');
+  try {
+    const data = await fetchOrderDetails(id, token);
+    setOrderInfo(data);
+  } catch (err) {
+    setMessage(err.message);
+    setOrderInfo(null);
+  }
+  setLoading(false);
+};
 
+// hủy khi có đơn hàng chưa được xử lý, còn đang giao thì kh đc hủy nữa
   const handleCancelOrder = async () => {
     Alert.alert('Xác nhận', 'Bạn có chắc muốn huỷ đơn hàng này?', [
       { text: 'Không', style: 'cancel' },
@@ -157,23 +207,56 @@ useEffect(() => {
 //   setData(updated);
 // };
 
+// hàmh để lưu thông tin khách hàng
+const handleSave = async () => {
+  setLoading(true);
+  try {
+    const currentData = await fetchTaiKhoan(token); // Lấy dữ liệu gốc
+
+    await updateTaiKhoan({
+      username: userInfo.username,
+      sdt: userInfo.sdt,
+      hoten: userInfo.hoten ?? currentData.hoten,
+      email: userInfo.email ?? currentData.email,
+    }, token);
+
+    const refreshed = await fetchTaiKhoan(token);
+    setUserInfo({
+      username: refreshed.username,
+      sdt: refreshed.sdt,
+    });
+
+    Alert.alert('Thành công', 'Cập nhật thông tin thành công');
+    setShowModal(false);
+  } catch (err) {
+    Alert.alert('Lỗi', err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
   const canCancel =
     orderInfo && orderInfo.length > 0 && orderInfo[0].trangthai === 'choxuly';
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
+    <ScrollView contentContainerStyle={{ padding: 20 }}
+  refreshControl={
+    <RefreshControl refreshing={loading} onRefresh={fetchInfoAndInitOrder} />
+  }>
       <Text style={styles.title}>Đặt Hàng</Text>
 
       <View style={styles.rowBetween}>
         <Text style={styles.label}>Thông tin khách hàng</Text>
+
         <TouchableOpacity onPress={() => setShowModal(true)}>
           <Text style={{ color: 'blue' }}>Chỉnh sửa</Text>
         </TouchableOpacity>
       </View>
 
-      <Text>Họ tên: {userInfo.ten}</Text>
-      <Text>SĐT: {userInfo.sdt}</Text>
-      <Text>Địa chỉ: {userInfo.diachi}</Text>
+      {/* <Text>Họ tên: {userInfo.ten}</Text>
+      <Text>SĐT: {userInfo.sdt}</Text> */}
 
 <Text style={{ marginTop: 15 }}>Số lượng:</Text>
 
@@ -244,47 +327,57 @@ useEffect(() => {
     </TouchableOpacity>
   ))
 )}
+<TouchableOpacity
+  onPress={handlePlaceOrder}
+  style={{ backgroundColor: 'green', padding: 12, borderRadius: 8, marginTop: 20 }}
+>
+  <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>Đặt hàng</Text>
+</TouchableOpacity>
+
+{/* hiển thị chi tiết đơn hàng */}
+{orderId !== '' && (
+  <TouchableOpacity
+    onPress={handleFetchOrderDetailsWithId}
+    style={{ backgroundColor: '#007AFF', padding: 10, marginTop: 10, borderRadius: 5 }}
+  >
+    <Text style={{ color: 'white', textAlign: 'center' }}>Xem chi tiết đơn hàng</Text>
+  </TouchableOpacity>
+)}
+
 
   </View>
+  
 )}
 
 
       {/* Modal chỉnh sửa thông tin khách hàng */}
       <Modal visible={showModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.label}>Chỉnh sửa thông tin</Text>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.label}>Chỉnh sửa thông tin</Text>
 
-            <TextInput
-              value={userInfo.ten}
-              onChangeText={(text) => setUserInfo({ ...userInfo, ten: text })}
-              placeholder="Họ tên"
-              style={styles.input}
-            />
-            <TextInput
-              value={userInfo.sdt}
-              onChangeText={(text) => setUserInfo({ ...userInfo, sdt: text })}
-              placeholder="Số điện thoại"
-              style={styles.input}
-              keyboardType="phone-pad"
-            />
-            <TextInput
-              value={userInfo.diachi}
-              onChangeText={(text) => {
-                setUserInfo({ ...userInfo, diachi: text });
-                setOrderDetails((prev) => ({ ...prev, diaChi: text }));
-              }}
-              placeholder="Địa chỉ"
-              style={styles.input}
-            />
+      <TextInput
+        value={userInfo.username}
+        onChangeText={(text) => setUserInfo({ ...userInfo, username: text })}
+        placeholder="Tên đăng nhập"
+        style={styles.input}
+      />
+      <TextInput
+        value={userInfo.sdt}
+        onChangeText={(text) => setUserInfo({ ...userInfo, sdt: text })}
+        placeholder="Số điện thoại"
+        style={styles.input}
+        keyboardType="phone-pad"
+      />
 
-            <View style={styles.modalButtons}>
-              <Button title="Lưu" onPress={() => setShowModal(false)} />
-              <Button title="Huỷ" color="gray" onPress={() => setShowModal(false)} />
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <View style={styles.modalButtons}>
+        <Button title="Lưu" onPress={handleSave} />
+        <Button title="Huỷ" color="gray" onPress={() => setShowModal(false)} />
+      </View>
+    </View>
+  </View>
+</Modal>
+
     </ScrollView>
   );
 }

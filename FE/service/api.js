@@ -58,6 +58,8 @@ export async function fetchTaiKhoan(token) {
     });
     return response.data;
   } catch (error) {
+    
+
     if (error.response && error.response.data) {
       throw new Error(error.response.data.error || 'Lấy tài khoản thất bại');
     } else {
@@ -145,9 +147,10 @@ export async function deleteDiaChi(id, token) {
 }
 
 // Cập nhật thông tin tài khoản (yêu cầu token)
-export async function updateTaiKhoan({ hoten, sdt, email, matkhau, diachi }, token) {
+export async function updateTaiKhoan({ username, hoten, sdt, email, matkhau, diachi }, token) {
   try {
     const response = await axios.put(`${BASE_URL}/api/taikhoan`, {
+      username,
       hoten,
       email,
       sdt,
@@ -159,8 +162,10 @@ export async function updateTaiKhoan({ hoten, sdt, email, matkhau, diachi }, tok
         Authorization: `Bearer ${token}`
       }
     });
+
     return response.data;
   } catch (error) {
+    
     if (error.response && error.response.data) {
       throw new Error(error.response.data.error || 'Cập nhật tài khoản thất bại');
     } else {
@@ -168,6 +173,7 @@ export async function updateTaiKhoan({ hoten, sdt, email, matkhau, diachi }, tok
     }
   }
 }
+
 
 //api xem danh mục (yêu cầu token)
 export async function fetchDanhMuc(name, token) {

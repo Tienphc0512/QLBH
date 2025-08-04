@@ -129,7 +129,7 @@ const handleSelectDanhMuc = (selectedDanhMuc) => {
   navigation.navigate('Danh mục sản phẩm', { danhMucId: selectedDanhMuc.id });
 };
 
-
+// điều hướng qua đặt hàng với item và số lượng đã chọn
 const handleOrderNow = (item) => {
   const sl = parseInt(soluongs?.[item.id]);
 

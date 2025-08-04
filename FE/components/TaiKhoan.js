@@ -2,16 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, Text, Button, ActivityIndicator, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { fetchTaiKhoan, updateTaiKhoan } from '../service/api';
 import { useAuth } from '../context/Auth';
-import DiaChiModal from './DiaChiModal .js';
-
+import DiaChiModal from './DiaChiModal';
+import { useFocusEffect } from '@react-navigation/native';
 
 const TaiKhoan = () => {
     const [formData, setFormData] = useState({
+        username: '',
         hoten: '',
         sdt: '',
         email: '',
         matkhau: '',
-        diachi: '',
+        // diachi: '',
     });
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
@@ -20,8 +21,24 @@ const TaiKhoan = () => {
 
 
 
-    useEffect(() => {
-        const getTaiKhoan = async () => {
+    // useEffect(() => {
+        
+    //     const getTaiKhoan = async () => {
+    //         setLoading(true);
+    //         try {
+    //             const data = await fetchTaiKhoan(token);
+    //             setFormData(data);
+    //         } catch (err) {
+    //             Alert.alert('Lỗi', err.message);
+    //         }
+    //         setLoading(false);
+    //     };
+    //     getTaiKhoan();
+    // }, [token]);
+
+    useFocusEffect(
+  React.useCallback(() => {
+  const getTaiKhoan = async () => {
             setLoading(true);
             try {
                 const data = await fetchTaiKhoan(token);
@@ -32,7 +49,8 @@ const TaiKhoan = () => {
             setLoading(false);
         };
         getTaiKhoan();
-    }, [token]);
+  }, [token])
+);
 
     const handleChange = (key, value) => {
         setFormData(prev => ({ ...prev, [key]: value }));
@@ -58,69 +76,74 @@ const TaiKhoan = () => {
 
     return (
         <>
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.label}>Họ tên</Text>
-            <TextInput
-                style={styles.input}
-                value={formData.hoten}
-                onChangeText={text => handleChange('hoten', text)}
-                placeholder="Nhập họ tên"
-            />
-
-            <Text style={styles.label}>Số điện thoại</Text>
-            <TextInput
-                style={styles.input}
-                value={formData.sdt}
-                onChangeText={text => handleChange('sdt', text)}
-                placeholder="Nhập số điện thoại"
-                keyboardType="phone-pad"
-            />
-
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-                style={styles.input}
-                value={formData.email}
-                onChangeText={text => handleChange('email', text)}
-                placeholder="Nhập email"
-                keyboardType="email-address"
-            />
-
-            <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-                style={styles.input}
-                value={formData.matkhau}
-                onChangeText={text => handleChange('matkhau', text)}
-                placeholder="(Mật khẩu đã được ẩn) Nhập mật khẩu"
-                secureTextEntry
-            />
-
-            <View style={styles.buttonContainer}>
-                <Button
-                    title={updating ? 'Đang cập nhật...' : 'Cập nhật tài khoản'}
-                    onPress={onSubmit}
-                    color="#007bff"
-                    disabled={updating}
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.label}>Tên đăng nhập</Text>
+                <TextInput
+                    style={styles.input}
+                    value={formData.username}
+                    onChangeText={text => handleChange('username', text)}
+                    placeholder="Nhập tên đăng nhập"
                 />
-            </View>
-            
-<Text style={styles.label}>Địa chỉ</Text>
-<TouchableOpacity onPress={() => setShowDiaChiModal(true)}>
-  <Text style={styles.link}>Quản lý địa chỉ ➤</Text>
-</TouchableOpacity>
-
-            <View style={styles.logoutContainer}>
-                <Button
-                    title="Đăng xuất"
-                    onPress={handleLogout}
-                    color="#dc3545"
+                <Text style={styles.label}>Họ tên</Text>
+                <TextInput
+                    style={styles.input}
+                    value={formData.hoten}
+                    onChangeText={text => handleChange('hoten', text)}
+                    placeholder="Nhập họ tên"
                 />
-            </View>
-        </ScrollView>
-        <DiaChiModal
-  visible={showDiaChiModal}
-  onClose={() => setShowDiaChiModal(false)}
-/>
-</>
+
+                <Text style={styles.label}>Số điện thoại</Text>
+                <TextInput
+                    style={styles.input}
+                    value={formData.sdt}
+                    onChangeText={text => handleChange('sdt', text)}
+                    placeholder="Nhập số điện thoại"
+                    keyboardType="phone-pad"
+                />
+
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                    style={styles.input}
+                    value={formData.email}
+                    onChangeText={text => handleChange('email', text)}
+                    placeholder="Nhập email"
+                    keyboardType="email-address"
+                />
+
+                <Text style={styles.label}>Mật khẩu</Text>
+                <TextInput
+                    style={styles.input}
+                    value={formData.matkhau}
+                    onChangeText={text => handleChange('matkhau', text)}
+                    placeholder="(Mật khẩu đã được ẩn) Nhập mật khẩu"
+                    secureTextEntry
+                />
+
+                <Text style={styles.label}>Địa chỉ</Text>
+                <TouchableOpacity onPress={() => setShowDiaChiModal(true)}>
+                    <Text style={styles.link}>Quản lý địa chỉ ➤</Text>
+                </TouchableOpacity>
+                <View style={styles.buttonContainer}>
+                    <Button
+                        title={updating ? 'Đang cập nhật...' : 'Cập nhật tài khoản'}
+                        onPress={onSubmit}
+                        color="#007bff"
+                        disabled={updating}
+                    />
+                </View>
+                <View style={styles.logoutContainer}>
+                    <Button
+                        title="Đăng xuất"
+                        onPress={handleLogout}
+                        color="#dc3545"
+                    />
+                </View>
+            </ScrollView>
+            <DiaChiModal
+                visible={showDiaChiModal}
+                onClose={() => setShowDiaChiModal(false)}
+            />
+        </>
     );
 };
 
@@ -147,10 +170,10 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     link: {
-  color: '#007bff',
-  fontWeight: 'bold',
-  marginBottom: 10,
-}
+        color: '#007bff',
+        fontWeight: 'bold',
+        marginBottom: 10,
+    }
 
 });
 
