@@ -37,8 +37,8 @@ const [selectedProductId, setSelectedProductId] = useState(null);
         const danhmucRes = await fetchDanhMuc('', token);
         setDanhmuc(danhmucRes);
 
-        const sanphamRes = await fetchSanPham('', token);
-        console.log('API trả về:', sanphamRes);
+        const sanphamRes = await fetchSanPham(token, '');
+        // console.log('API trả về:', sanphamRes);
         setSanpham(sanphamRes);
         // setFilteredSanPham(sanphamRes);
       } catch (err) {
@@ -131,29 +131,6 @@ const handleSelectDanhMuc = (selectedDanhMuc) => {
 };
 
 // điều hướng qua đặt hàng với item và số lượng đã chọn
-// const handleOrderNow = (sp) => {
-//   const sl = parseInt(soluongs?.[sp.id]);
-
-//   const validQty =
-//     !isNaN(sl) && sl > 0
-//       ? sl
-//       : parseInt(sp.soluong) > 0
-//       ? 1
-//       : 0;
-
-//   if (validQty <= 0) {
-//     Alert.alert("Lỗi", "Sản phẩm không khả dụng để mua.");
-//     return;
-//   }
-
-//   navigation.navigate("Đặt hàng", {
-//     sp: {
-//       ...sp,
-//       soluong: validQty,
-//     },
-//   });
-// };
-
 const handleOrderNow = (sp) => {
   // điều hướng qua màn hình Đặt hàng với sản phẩm đã chọn
   navigation.navigate("Đặt hàng", {
@@ -208,7 +185,7 @@ const handleOrderNow = (sp) => {
       />
 
       {/* SẢN PHẨM - lưới 3 cột, lướt dọc */}
-      <Text style={styles.heading}>Sản phẩm nổi bật</Text>
+      <Text style={styles.heading}>Sản phẩm</Text>
 <FlatList
   data={sanpham}
   keyExtractor={(item) => item.id.toString()}

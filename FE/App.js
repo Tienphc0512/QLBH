@@ -8,8 +8,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import TrangChu from "./components/TrangChu";
 import GioHang from "./components/GioHang";
-import DonHang from "./components/DatHang";
-import Chatbot from "./components/Chatbot";
+import TheodoiDH from "./components/TheodoiDH";
 import TaiKhoan from "./components/TaiKhoan";
 
 import DangNhap from "./components/DangNhap";
@@ -21,7 +20,8 @@ import Sanpham from "./components/Sanpham";
 import LichSuChatBot from "./components/LichSuChatBot";
 import TimKiem from "./components/TimKiem"; 
 import ThongBao from "./components/ThongBao";
-
+import DonHang from "./components/DatHang";
+import Chatbot from "./components/Chatbot";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -48,7 +48,7 @@ function MainTabs() {
 
           if (route.name === 'Trang chủ') iconName = 'home-outline';
           else if (route.name === 'Giỏ hàng') iconName = 'cart-outline';
-          else if (route.name === 'Đơn hàng') iconName = 'receipt-outline';
+          else if (route.name === 'Theo dõi đơn') iconName = 'receipt-outline';
           // else if (route.name === 'Chatbot') iconName = 'chatbubbles-outline';
           else if (route.name === 'Tài khoản') iconName = 'person-outline';
 
@@ -61,7 +61,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Trang chủ" component={TrangChu} />
       <Tab.Screen name="Giỏ hàng" component={GioHang} />
-      <Tab.Screen name="Đơn hàng" component={DonHang} />
+      <Tab.Screen name="Theo dõi đơn" component={TheodoiDH} />
       {/* <Tab.Screen name="Chatbot" component={Chatbot} /> */}
       <Tab.Screen name="Tài khoản" component={TaiKhoan} />
     </Tab.Navigator>

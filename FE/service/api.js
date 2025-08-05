@@ -197,7 +197,7 @@ export async function fetchDanhMuc(name, token) {
 }
 
 // api xem sản phẩm (yêu cầu token)
-export async function fetchSanPham(name, token) {
+export async function fetchSanPham(token, name = '') {
   try {
     const response = await axios.get(`${BASE_URL}/api/sanpham`, {
       params: {
@@ -216,6 +216,7 @@ export async function fetchSanPham(name, token) {
     }
   }
 }
+
 
 // api xem chi tiết sản phẩm
 export async function fetchChiTietSanPham(sanphamId, token) {
@@ -316,18 +317,22 @@ export async function fetchOrderDetails(orderId, token) {
   try {
     const response = await axios.get(`${BASE_URL}/api/chi_tiet_don_hang/${orderId}`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
     });
-    return response.data;
+
+    return response.data; 
   } catch (error) {
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.error || 'Lấy chi tiết đặt hàng thất bại');
-    } else {
-      throw new Error('Không thể kết nối đến máy chủ');
+    // Nếu token hết hạn hoặc không hợp lệ
+    if (error.response?.status === 401) {
+      throw new Error('Phiên đã hết hạn, vui lòng đăng nhập lại');
     }
+
+    throw error; // Ném lỗi khác nếu không phải 401
   }
 }
+
 
 // api xem thông báo
 export async function fetchNotifications(token) {

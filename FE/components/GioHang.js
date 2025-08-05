@@ -7,12 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  ToastAndroid
 } from "react-native";
 import { useCart } from "../context/CartContext";
 import { removeFromCart as removeFromCartAPI, placeOrder } from "../service/api";
 import { useAuth } from "../context/Auth";
 import { useNavigation } from "@react-navigation/native";
-import Checkbox from "expo-checkbox"; // Dùng checkbox từ expo, hoặc thay bằng bất kỳ lib nào bạn dùng
+import Checkbox from "expo-checkbox";
 
 const GioHang = () => {
   const { cartItems, removeFromCart } = useCart();
@@ -31,21 +32,9 @@ const GioHang = () => {
     );
   };
 
-  const handleRemove = async (itemId) => {
-    try {
-      setLoadingId(itemId);
-      await removeFromCartAPI(itemId, token);
-      removeFromCart(itemId);
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setLoadingId(null);
-    }
-  };
-
-const handlePlaceOrder = async () => {
-  if (selectedItems.length === 0) {
-    Alert.alert("Chưa chọn sản phẩm nào", "Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng.");
+  const handlePlaceOrder = async () => {
+   if (selectedItems.length === 0) {
+    ToastAndroid.show("Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng.", ToastAndroid.SHORT);
     return;
   }
 
@@ -53,26 +42,7 @@ const handlePlaceOrder = async () => {
     selectedItems.includes(item.id)
   );
 
-  try {
-    setIsPlacingOrder(true); // bắt đầu loading
-    const response = await placeOrder(selectedProducts);
-
-    if (response.success) {
-      for (const item of selectedProducts) {
-        await removeFromCartAPI(item.id);
-      }
-
-      Alert.alert("Đặt hàng thành công", "Đơn hàng của bạn đã được xử lý.");
-      navigation.navigate("Đặt hàng", { products: selectedProducts });
-    } else {
-      Alert.alert("Lỗi đặt hàng", response.message || "Đã có lỗi xảy ra.");
-    }
-  } catch (error) {
-    Alert.alert("Lỗi hệ thống", "Không thể kết nối đến máy chủ.");
-    console.error("Order error:", error);
-  } finally {
-    setIsPlacingOrder(false); // kết thúc loading
-  }
+  navigation.navigate("Đặt hàng", { selectedProducts }); // Chỉ điều hướng thôi
 };
 
 
@@ -89,17 +59,6 @@ const handlePlaceOrder = async () => {
         <Text>Số lượng: {item.soluong}</Text>
         <Text>Giá: {item.gia.toLocaleString()} VNĐ</Text>
       </View>
-      <TouchableOpacity
-        style={styles.removeBtn}
-        disabled={loadingId === item.id}
-        onPress={() => handleRemove(item.id)}
-      >
-        {loadingId === item.id ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <Text style={styles.removeBtnText}>Xoá</Text>
-        )}
-      </TouchableOpacity>
     </View>
   );
 
@@ -109,31 +68,77 @@ const handlePlaceOrder = async () => {
       {cartItems.length === 0 ? (
         <Text>Chưa có sản phẩm nào trong giỏ hàng.</Text>
       ) : (
-        <>
-          <FlatList
-            data={cartItems}
+       <>
+      <FlatList
+        data={cartItems}
         keyExtractor={(item, index) => `${item.id}-${index}`}
+        renderItem={renderItem}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        ListHeaderComponent={
+          <View style={styles.selectAllContainer}>
+            <Checkbox
+              value={selectedItems.length === cartItems.length}
+              onValueChange={() => {
+                if (selectedItems.length === cartItems.length) {
+                  setSelectedItems([]);
+                } else {
+                  setSelectedItems(cartItems.map((item) => item.id));
+                }
+              }}
+            />
+            <Text style={{ marginLeft: 8 }}>Chọn tất cả</Text>
+          </View>
+        }
+      />
 
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={[styles.deleteBtn, { flex: 1, marginRight: 8 }]}
+          onPress={async () => {
+            if (selectedItems.length === 0) {
+              Alert.alert("Chưa chọn sản phẩm nào", "Vui lòng chọn ít nhất 1 sản phẩm để xoá.");
+              return;
+            }
 
-            renderItem={renderItem}
-            contentContainerStyle={{ paddingBottom: 20 }}
-          />
-         <TouchableOpacity
-  style={styles.orderBtn}
-  onPress={handlePlaceOrder}
-  disabled={isPlacingOrder}
->
-  {isPlacingOrder ? (
-    <ActivityIndicator color="#fff" />
-  ) : (
-    <Text style={styles.orderBtnText}>Đặt hàng</Text>
+            Alert.alert(
+              "Xác nhận xoá",
+              `Bạn có chắc muốn xoá ${selectedItems.length} sản phẩm?`,
+              [
+                { text: "Huỷ" },
+                {
+                  text: "Xoá",
+                  style: "destructive",
+                  onPress: async () => {
+                    for (const itemId of selectedItems) {
+                      await removeFromCartAPI(itemId, token);
+                      removeFromCart(itemId);
+                    }
+                    setSelectedItems([]);
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.orderBtnText}>Xoá đã chọn</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.orderBtn, { flex: 1 }]}
+          onPress={handlePlaceOrder}
+          disabled={isPlacingOrder}
+        >
+          {isPlacingOrder ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.orderBtnText}>Đặt hàng</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </>
   )}
-</TouchableOpacity>
-
-        </>
-      )}
-    </View>
-  );
+</View>
+);
 };
 
 const styles = StyleSheet.create({
@@ -172,6 +177,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  selectAllContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 10,
+},
+
+actionButtons: {
+  flexDirection: "row",
+  marginTop: 10,
+},
+
+deleteBtn: {
+  backgroundColor: "#f44336",
+  padding: 16,
+  borderRadius: 8,
+  alignItems: "center",
+},
+
 });
 
 export default GioHang;
