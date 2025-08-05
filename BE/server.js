@@ -273,6 +273,7 @@ SELECT DISTINCT ON (sp.id)
   sp.ten AS ten_san_pham,
   sp.gia,
   sp.soluong,
+  sp.danhmuc_id,
   COALESCE(ha.image_path, 'https://example.com/default-image.jpg') AS anh_dai_dien
 FROM sanpham sp
 LEFT JOIN hinhanh_sanpham ha ON sp.id = ha.sanpham_id
@@ -312,21 +313,6 @@ app.get('/api/sanpham/:id', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Lỗi server' });
   }
 });
-
-
-// //  API trả về danh sách ảnh cho sản phẩm dựa trên id
-// app.get('/api/sanpham/:id/hinhanh', async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const result = await pool.query(
-//       'SELECT image_path FROM hinhanh_sanpham WHERE sanpham_id = $1',
-//       [id]
-//     );
-//     res.json(result.rows); // ví dụ: [ { image_path: 'https://example.com/uploads/sanpham1_1.jpg' }, ... ]
-//   } catch (err) {
-//     res.status(500).json({ error: 'Lỗi lấy dữ liệu hình ảnh' });
-//   }
-// });
 
 // xem danh mục để link qua sản phẩm theo danh mục
 app.get("/api/danhmuc", verifyToken, async (req, res) => {
@@ -504,25 +490,22 @@ app.delete("/api/huy_don_hang/:id", verifyToken, async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Xóa chi tiết đơn hàng trước
-    await client.query("DELETE FROM chitietdathang WHERE dathang_id = $1", [dathang_id]);
-
-    // Xóa đơn hàng
-    const result = await client.query(
-      "DELETE FROM dathang WHERE id = $1 AND user_id = $2",
-      [dathang_id, user_id]
+    //  Tạo thông báo TRƯỚC khi xóa
+    await client.query(
+      "INSERT INTO thongbao (user_id, dathang_id, noidung) VALUES ($1, $2, $3)",
+      [user_id, dathang_id, `Bạn đã huỷ đơn hàng #${dathang_id}`]
     );
+
+   // Cập nhật trạng thái đơn hàng thành "Đã hủy"
+const result = await client.query(
+  "UPDATE dathang SET trangthai = 'Đã hủy' WHERE id = $1 AND user_id = $2",
+  [dathang_id, user_id]
+);
 
     if (result.rowCount === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
     }
-
-    // Tạo thông báo sau khi xoá thành công
-    await client.query(
-      "INSERT INTO thongbao (user_id, dathang_id, noidung) VALUES ($1, $2, $3)",
-      [user_id, dathang_id, `Bạn đã huỷ đơn hàng #${dathang_id}`]
-    );
 
     await client.query("COMMIT");
     res.json({ message: "Đơn hàng đã được huỷ và thông báo đã được gửi" });
@@ -534,6 +517,7 @@ app.delete("/api/huy_don_hang/:id", verifyToken, async (req, res) => {
     client.release();
   }
 });
+
 
 
 // xem thông báo
@@ -615,7 +599,7 @@ app.get("/api/chi_tiet_don_hang/:id", verifyToken, async (req, res) => {
   }
 });
 
-
+// xem lịch sử đặt hàng
 app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -653,20 +637,6 @@ app.get("/api/chi_tiet_huy_don_hang/:id", verifyToken, async (req, res) => {
 });
 
 // xem lịch sử tìm kiếm trên chatbot
-// app.get("/api/lich_su_tim_kiem", verifyToken, async (req, res) => {
-//   try {
-//     const user_id = req.userId;
-//     const result = await pool.query(
-//       "SELECT * FROM lichsutimkiemai WHERE user_id = $1 ORDER BY created_at DESC",
-//       [user_id]
-//     );
-//     res.json(result.rows);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Lỗi khi lấy lịch sử tìm kiếm" });
-//   }
-// });
-
 app.get("/api/lich_su_tim_kiem", verifyToken, async (req, res) => {
   try {
     const userId = req.userId; // Lấy từ middleware verifyToken
