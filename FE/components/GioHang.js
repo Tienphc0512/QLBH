@@ -10,7 +10,7 @@ import {
   ToastAndroid
 } from "react-native";
 import { useCart } from "../context/CartContext";
-import { removeFromCart as removeFromCartAPI, placeOrder } from "../service/api";
+import { removeFromCart as removeFromCartAPI} from "../service/api";
 import { useAuth } from "../context/Auth";
 import { useNavigation } from "@react-navigation/native";
 import Checkbox from "expo-checkbox";
@@ -31,18 +31,21 @@ const GioHang = () => {
         : [...prev, itemId]
     );
   };
-
-  const handlePlaceOrder = async () => {
-   if (selectedItems.length === 0) {
+const handlePlaceOrder = async () => {
+  if (selectedItems.length === 0) {
     ToastAndroid.show("Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng.", ToastAndroid.SHORT);
     return;
   }
 
-  const selectedProducts = cartItems.filter((item) =>
-    selectedItems.includes(item.id)
-  );
+  const selectedProducts = cartItems
+    .filter((item) => selectedItems.includes(item.id))
+    .map((item) => ({
+      ...item,
+      // tonKho: parseInt(item.soluong), // thêm trường `tonKho` từ tồn kho thật
+      //  quantity: item.quantity || 1, 
+    }));
 
-  navigation.navigate("Đặt hàng", { selectedProducts }); // Chỉ điều hướng thôi
+  navigation.navigate("Đặt hàng", { selectedProducts });
 };
 
 

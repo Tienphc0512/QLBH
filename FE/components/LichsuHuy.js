@@ -5,43 +5,45 @@ import {
     FlatList,
     StyleSheet,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    TouchableOpacity
 } from 'react-native';
 import { useAuth } from '../context/Auth';
-import { fetchOrderHistory } from '../service/api';
+import { fetchCancelDetailsHis } from '../service/api';
 import Thongtingiaohang from './Modal/Thongtingiaohang';
 
-export default function LichSuDatHang() {
+export default function DonHangDaHuy() {
     const { token } = useAuth();
     const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    //modal thông tin giao hàng
+    //modal thông tin giao hàng 
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedOrderInfo, setSelectedOrderInfo] = useState(null);
 
-    const loadOrderHistory = async () => {
+    const loadCancelledOrders = async () => {
         try {
             setRefreshing(true);
-            const result = await fetchOrderHistory(token);
+            const result = await fetchCancelDetailsHis(token); // Gọi API lấy lịch sử huỷ
             setOrders(result || []);
         } catch (error) {
-            console.error('Lỗi khi tải lịch sử đơn hàng:', error);
+            console.error('Lỗi khi tải đơn hàng đã huỷ:', error);
         } finally {
             setRefreshing(false);
             setLoading(false);
         }
     };
 
+    useEffect(() => {
+        loadCancelledOrders();
+    }, []);
+
+    //xử lý modal
     const showShippingInfo = (order) => {
         setSelectedOrderInfo(order);
         setModalVisible(true);
-    };
-
-    useEffect(() => {
-        loadOrderHistory();
-    }, []);
+    }
 
     const renderItem = ({ item }) => (
         <View style={styles.orderItem}>
@@ -50,36 +52,35 @@ export default function LichSuDatHang() {
             <Text style={styles.infoText}>Số lượng: {item.soluong}</Text>
             <Text style={styles.infoText}>Đơn giá: {Number(item.dongia).toLocaleString()}đ</Text>
             <Text style={styles.infoText}>Tổng tiền: {Number(item.tongtien).toLocaleString()}đ</Text>
-            <Text style={styles.infoText}>Hình thức thanh toán: {item.hinhthuc_thanhtoan}</Text>
-            <Text style={styles.infoText}>Ngày đặt: {new Date(item.ngaydat).toLocaleString()}</Text>
+            <Text style={styles.infoText}>Ngày huỷ: {new Date(item.ngayhuy).toLocaleString()}</Text>
             <TouchableOpacity onPress={() => showShippingInfo(item)}>
                 <Text style={{ color: '#2980b9', marginTop: 10, fontWeight: 'bold' }}>
                     Thông tin giao hàng
                 </Text>
             </TouchableOpacity>
-            <Text style={styles.successText}>Đã giao thành công</Text>
+            <Text style={[styles.infoText, { color: '#e74c3c' }]}>Đơn hàng đã huỷ</Text>
         </View>
     );
 
     if (loading) {
         return (
             <View style={styles.center}>
-                <ActivityIndicator size="large" color="#2980b9" />
+                <ActivityIndicator size="large" color="#3498db" />
             </View>
         );
     }
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Lịch sử đặt hàng</Text>
+            <Text style={styles.title}>Lịch sử đơn hàng đã huỷ</Text>
             <FlatList
                 data={orders}
                 keyExtractor={(item, index) => `${item.dathang_id}-${index}`}
                 renderItem={renderItem}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={loadOrderHistory} />
+                    <RefreshControl refreshing={refreshing} onRefresh={loadCancelledOrders} />
                 }
-                ListEmptyComponent={<Text style={styles.empty}>Chưa có đơn hàng nào được giao.</Text>}
+                ListEmptyComponent={<Text style={styles.empty}>Không có đơn hàng đã huỷ.</Text>}
             />
             <Thongtingiaohang
                 visible={modalVisible}
@@ -89,55 +90,3 @@ export default function LichSuDatHang() {
         </View>
     );
 }
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f6f9fc',
-        padding: 16,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#2c3e50',
-        marginBottom: 12,
-    },
-    orderItem: {
-        backgroundColor: '#ecf0f1',
-        padding: 16,
-        marginVertical: 8,
-        borderRadius: 10,
-        borderColor: '#dcdde1',
-        borderWidth: 1,
-        elevation: 3,
-    },
-    orderCode: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        marginBottom: 6,
-        color: '#34495e',
-    },
-    infoText: {
-        fontSize: 15,
-        color: '#2f3640',
-        marginBottom: 2,
-    },
-    successText: {
-        marginTop: 6,
-        fontWeight: 'bold',
-        color: '#27ae60',
-        fontSize: 15,
-    },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    empty: {
-        textAlign: 'center',
-        color: '#888',
-        marginTop: 20,
-        fontSize: 16,
-    },
-});
-

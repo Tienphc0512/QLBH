@@ -63,8 +63,8 @@ export default function ThongBao() {
         keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <Text style={styles.title}>{item.title || 'Không có tiêu đề'}</Text>
-            <Text>{item.content || ''}</Text>
+            {/* <Text style={styles.title}>{item.noidung || 'Không có tiêu đề'}</Text> */}
+            <Text>{item.noidung || ''}</Text>
             <Text style={styles.date}>
               {item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}
             </Text>

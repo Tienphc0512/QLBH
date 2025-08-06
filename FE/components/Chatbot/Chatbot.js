@@ -13,7 +13,7 @@ import {
 import Ionicons from "react-native-vector-icons/Ionicons";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
-import { useAuth } from "../context/Auth";
+import { useAuth } from "../../context/Auth";
 
 const ChatBot = () => {
   const [input, setInput] = useState("");

@@ -14,17 +14,24 @@ import { useAuth } from '../context/Auth';
 import { useRoute } from '@react-navigation/native';
 import {cancelOrder, fetchOrderDetails } from '../service/api'; // Import cancelOrder nếu cần
 import Checkbox from 'expo-checkbox';
+import Thongtingiaohang from './Modal/Thongtingiaohang';
+
 
 export default function TheodoiDH() {
   const { token } = useAuth();
   const route = useRoute();
   const { orderInfo } = route.params || {};
+  
 
 
   const [orders, setOrders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 const [selectedOrders, setSelectedOrders] = useState([]);
+
+//modal info ng đặt 
+const [modalVisible, setModalVisible] = useState(false);
+const [selectedOrderInfo, setSelectedOrderInfo] = useState(null);
 
   const loadOrders = async (id) => {
     try {
@@ -37,6 +44,7 @@ const [selectedOrders, setSelectedOrders] = useState([]);
       setRefreshing(false);
       setLoading(false);
     }
+
   };
 
   useEffect(() => {
@@ -88,7 +96,17 @@ const toggleSelectOrder = (id) => {
   });
 };
 
+//xử lý mở modal
+const showShippingInfo = (order) => {
+  setSelectedOrderInfo({
+    username: order.username || 'Không xác định',
+    sdt: order.sdt || 'Chưa có',
+    diachi: order.diachi || 'Chưa cung cấp',
+  });
+  setModalVisible(true);
+};
 
+//chia màu cho tunefg trạng thái đơn hàng
 const getStatusColor = (status) => {
   switch (status) {
     case 'choxuly':
@@ -144,6 +162,12 @@ const renderItem = ({ item }) => {
       </Text>
       <Text style={styles.infoText1}>Tổng tiền: {Number(item.tongtien).toLocaleString()}đ</Text>
       <Text style={styles.infoText}>Ngày đặt: {new Date(item.ngaydat).toLocaleString()}</Text>
+      <TouchableOpacity onPress={() => showShippingInfo(item)}>
+  <Text style={{ color: '#2980b9', marginTop: 10, fontWeight: 'bold' }}>
+    Thông tin giao hàng
+  </Text>
+</TouchableOpacity>
+
     </View>
   );
 };
@@ -213,6 +237,12 @@ const renderItem = ({ item }) => {
       </Text>
     </TouchableOpacity>
   )}
+<Thongtingiaohang
+  visible={modalVisible}
+  onClose={() => setModalVisible(false)}
+  orderInfo={selectedOrderInfo}
+/>
+
 </View>
   );
 }
@@ -300,4 +330,47 @@ Title: {
     backgroundColor: '#f0f6fa',
     padding: 16,
   },
+
+  //css modal thông tin ng dùng 
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+modalContainer: {
+  width: '80%',
+  backgroundColor: '#fff',
+  padding: 20,
+  borderRadius: 10,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 4,
+  elevation: 5,
+},
+modalTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  marginBottom: 10,
+  textAlign: 'center',
+},
+modalText: {
+  fontSize: 16,
+  marginVertical: 4,
+  color: '#2c3e50',
+},
+closeButton: {
+  marginTop: 15,
+  backgroundColor: '#3498db',
+  paddingVertical: 10,
+  borderRadius: 6,
+  alignItems: 'center',
+},
+closeButtonText: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: 'bold',
+},
+
 });

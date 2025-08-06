@@ -13,7 +13,7 @@ import {
   Image,
   ToastAndroid
 } from 'react-native';
-import { placeOrder, fetchOrderDetails, cancelOrder, fetchTaiKhoan, updateTaiKhoan, fetchDiaChi } from '../service/api';
+import { placeOrder, fetchOrderDetails, fetchTaiKhoan, updateTaiKhoan, fetchDiaChi } from '../service/api';
 import { useAuth } from '../context/Auth';
 import { useNavigation } from '@react-navigation/native';
 
@@ -42,6 +42,7 @@ export default function DatHang({ route }) {
   const [selectedDiaChiId, setSelectedDiaChiId] = useState(null);
   // const [modalVisible, setModalVisible] = useState(false); // CTDH
   const navigation = useNavigation();
+
 
 
   const fetchInfoAndInitOrder = async () => {
@@ -132,47 +133,90 @@ export default function DatHang({ route }) {
   // };
 
 
-  const handlePlaceOrder = async () => {
-    const item = orderDetails.items[0];
-    console.log(">> Bắt đầu đặt hàng");
-    console.log(">> orderDetails:", orderDetails);
-    if (item.soluong > selectedItem.soluong) {
-      setMessage('Số lượng vượt quá tồn kho!');
-      console.log(">> Quá tồn kho!");
-      return;
-    }
+  // const handlePlaceOrder = async () => {
+  //   const item = orderDetails.items[0];
+  //   console.log(">> Bắt đầu đặt hàng");
+  //   console.log(">> orderDetails:", orderDetails);
+  //   if (item.soluong > selectedItem.soluong) {
+  //     setMessage('Số lượng vượt quá tồn kho!');
+  //     console.log(">> Quá tồn kho!");
+  //     return;
+  //   }
 
-    setLoading(true);
-    setMessage('');
+  //   setLoading(true);
+  //   setMessage('');
+  //   try {
+  //     console.log(">> Gửi API đặt hàng...");
+  //     const data = await placeOrder(orderDetails, token);
+  //     console.log(">> Kết quả từ API:", data);
+
+  //     const newOrderId = data.dathang_id.toString();
+  //     setOrderId(newOrderId);
+  //     setMessage(`Đặt hàng thành công! Mã đơn hàng: ${newOrderId}`);
+
+  //     try {
+  //       const details = await fetchOrderDetails(newOrderId, token);
+  //       setOrderInfo(details);
+  //     } catch (err) {
+  //       console.log(">> Lỗi khi fetchOrderDetails:", err);
+  //       Alert.alert("Lỗi", "Không thể tải chi tiết đơn hàng.");
+  //     }
+
+  //   } catch (err) {
+  //     console.log(">> Lỗi khi đặt hàng:", err);
+  //     setMessage(err.message || "Lỗi không xác định");
+  //   }
+  //   setLoading(false);
+  // };
+
+const handlePlaceOrder = async () => {
+  const item = orderDetails.items[0];
+  console.log(">> Bắt đầu đặt hàng");
+  console.log(">> orderDetails:", orderDetails);
+
+  if (item.soluong > selectedItem.soluong) {
+    setMessage('Số lượng vượt quá tồn kho!');
+    console.log(">> Quá tồn kho!");
+    return;
+  }
+
+  setLoading(true);
+  setMessage('');
+
+  try {
+    console.log(">> Gửi API đặt hàng...");
+
+    // GỬI orderDetails kèm diachi_id
+    const data = await placeOrder(
+      { ...orderDetails, diachi_id: selectedDiaChiId }, 
+      token
+    );
+
+    console.log(">> Kết quả từ API:", data);
+
+    const newOrderId = data.dathang_id.toString();
+    setOrderId(newOrderId);
+    setMessage(`Đặt hàng thành công! Mã đơn hàng: ${newOrderId}`);
+
     try {
-      console.log(">> Gửi API đặt hàng...");
-      const data = await placeOrder(orderDetails, token);
-      console.log(">> Kết quả từ API:", data);
-
-      const newOrderId = data.dathang_id.toString();
-      setOrderId(newOrderId);
-      setMessage(`Đặt hàng thành công! Mã đơn hàng: ${newOrderId}`);
-
-      try {
-        const details = await fetchOrderDetails(newOrderId, token);
-        setOrderInfo(details);
-      } catch (err) {
-        console.log(">> Lỗi khi fetchOrderDetails:", err);
-        Alert.alert("Lỗi", "Không thể tải chi tiết đơn hàng.");
-      }
-
+      const details = await fetchOrderDetails(newOrderId, token);
+      setOrderInfo(details);
     } catch (err) {
-      console.log(">> Lỗi khi đặt hàng:", err);
-      setMessage(err.message || "Lỗi không xác định");
+      console.log(">> Lỗi khi fetchOrderDetails:", err);
+      Alert.alert("Lỗi", "Không thể tải chi tiết đơn hàng.");
     }
-    setLoading(false);
-  };
 
+  } catch (err) {
+    console.log(">> Lỗi khi đặt hàng:", err);
+    setMessage(err.message || "Lỗi không xác định");
+  }
+  setLoading(false);
+};
 
-  const handleFetchOrderDetailsWithId = (orderInfo) => {
-    navigation.navigate('MainTabs', {
-      screen: 'Theo dõi đơn',
-    });
+  const handleFetchOrderDetailsWithId = () => {
+    navigation.navigate("Theo dõi đơn", {  orderInfo: {
+    
+  } })
     setLoading(true);
     setMessage('');
   };
@@ -225,56 +269,62 @@ export default function DatHang({ route }) {
         </TouchableOpacity>
       </View>
 
-       {/* từ giỏ hàng qua */}
-        {selectedProducts && selectedProducts.length > 0 && (
+   {/* từ giỏ hàng qua */}
+{selectedProducts && selectedProducts.length > 0 && (
   <>
-    {selectedProducts.map((item, index) => (
-      <View
-        key={item.id || index}
-        style={{
-          flexDirection: 'row',
-          borderWidth: 1,
-          borderColor: '#ccc',
-          padding: 10,
-          borderRadius: 8,
-          marginBottom: 15,
-        }}
-      >
-        <Image
-          source={{ uri: item.anh_dai_dien }}
-          style={{ width: 80, height: 80, marginRight: 10, borderRadius: 8 }}
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.ten_san_pham}</Text>
-          <Text>Giá: {Number(item.gia).toLocaleString()}đ</Text>
+    {selectedProducts.map((item, index) => {
+      // const tonKho = item.tonKho ?? 0; 
 
-          {/* Tăng giảm số lượng */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-            <TouchableOpacity
-              onPress={() => {
-                const newItems = [...orderDetails.items];
-                if (newItems[index].soluong > 1) {
-                  newItems[index].soluong -= 1;
-                  const tongtien = newItems.reduce((sum, i) => sum + i.soluong * i.dongia, 0);
-                  setOrderDetails({ ...orderDetails, items: newItems, tongtien });
-                }
-              }}
-              style={styles.qtyButton}
-            >
-              <Text style={styles.qtyText}>-</Text>
-            </TouchableOpacity>
+      return (
+        <View
+          key={item.id || index}
+          style={{
+            flexDirection: 'row',
+            borderWidth: 1,
+            borderColor: '#ccc',
+            padding: 10,
+            borderRadius: 8,
+            marginBottom: 15,
+          }}
+        >
+          <Image
+            source={{ uri: item.anh_dai_dien }}
+            style={{ width: 80, height: 80, marginRight: 10, borderRadius: 8 }}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.ten_san_pham}</Text>
+            <Text>Giá: {Number(item.gia).toLocaleString()}đ</Text>
 
-            <Text style={{ marginHorizontal: 10 }}>
-              {orderDetails.items[index]?.soluong ?? 1}
-            </Text>
-
-            <TouchableOpacity
+            {/* Tăng giảm số lượng */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+             <TouchableOpacity
   onPress={() => {
     const newItems = [...orderDetails.items];
-    if (newItems[index].soluong < newItems[index].tonkho) {
+    if (newItems[index].soluong > 1) {
+      newItems[index].soluong -= 1;
+      const tongtien = newItems.reduce((sum, i) => sum + i.soluong * i.dongia, 0);
+      setOrderDetails({ ...orderDetails, items: newItems, tongtien });
+    }
+  }}
+  style={styles.qtyButton}
+>
+  <Text style={styles.qtyText}>-</Text>
+</TouchableOpacity>
+
+<Text style={{ marginHorizontal: 10 }}>
+  {orderDetails.items[index]?.soluong ?? 1}
+</Text>
+
+<TouchableOpacity
+  onPress={() => {
+    const newItems = [...orderDetails.items];
+    console.log(">>> Tăng số lượng:", newItems[index]);
+
+    if (newItems[index].soluong < newItems[index].tonKho) {
       newItems[index].soluong += 1;
       const tongtien = newItems.reduce((sum, i) => sum + i.soluong * i.dongia, 0);
       setOrderDetails({ ...orderDetails, items: newItems, tongtien });
+
     } else {
       Alert.alert("Vượt số lượng tồn kho", "Không thể đặt quá số lượng còn lại trong kho.");
     }
@@ -284,10 +334,11 @@ export default function DatHang({ route }) {
   <Text style={styles.qtyText}>+</Text>
 </TouchableOpacity>
 
+            </View>
           </View>
         </View>
-      </View>
-    ))}
+      );
+    })}
 
     {/* Tổng tiền từ giỏ hàng */}
     <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
@@ -298,25 +349,29 @@ export default function DatHang({ route }) {
 
 
 
+
       {/* <Text>Họ tên: {userInfo.ten}</Text>
       <Text>SĐT: {userInfo.sdt}</Text> */}
       {selectedItem && (
-        <View
+         <View
+          key={selectedItem.id || index}
           style={{
-            flexDirection: 'row', // Thêm dòng này để xếp theo hàng ngang
+            flexDirection: 'row',
             borderWidth: 1,
             borderColor: '#ccc',
             padding: 10,
             borderRadius: 8,
             marginBottom: 15,
-            alignItems: 'center',
           }}
         >
+          <Image
+            source={{ uri: selectedItem.anh_dai_dien }}
+            style={{ width: 80, height: 80, marginRight: 10, borderRadius: 8 }}
+          />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 5 }}>
-              {selectedItem.ten_san_pham}
-            </Text>
+            <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{selectedItem.ten_san_pham}</Text>
             <Text>Giá: {Number(selectedItem.gia).toLocaleString()}đ</Text>
+
             <Text>Tồn kho: {selectedItem.soluong}</Text>
           </View>
 

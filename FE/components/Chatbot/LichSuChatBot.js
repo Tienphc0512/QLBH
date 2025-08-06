@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { fetchChatHistoryAI } from '../service/api'; 
+import { fetchChatHistoryAI } from '../../service/api'; 
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, SafeAreaView } from 'react-native';
-import { useAuth } from '../context/Auth';
+import { useAuth } from '../../context/Auth';
 
 export default function LichSuChatBot() {
     const [history, setHistory] = useState([]);
