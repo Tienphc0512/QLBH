@@ -127,7 +127,7 @@ const handleChangeSoluong = (text, productId, max) => {
 };
 
 const handleSelectDanhMuc = (selectedDanhMuc) => {
-  navigation.navigate('Danh mục sản phẩm', { danhMucId: selectedDanhMuc.id });
+  navigation.navigate('Danh mục sản phẩm', { danhMucId: selectedDanhMuc.id, ten: selectedDanhMuc.ten});
 };
 
 // điều hướng qua đặt hàng với item và số lượng đã chọn
@@ -202,7 +202,7 @@ const handleOrderNow = (sp) => {
         style={styles.productImage}
       />
       <Text style={styles.productName} numberOfLines={2}>{sp.ten_san_pham}</Text>
-      <Text style={styles.productPrice}>{sp.gia.toLocaleString()}₫</Text>
+      <Text style={styles.productPrice}>{parseInt(sp.gia).toLocaleString()}₫</Text>
       <Text style={styles.quantityInput}>Tồn kho: {sp.soluong}</Text>
      
       <View style={styles.buttonGroup}>

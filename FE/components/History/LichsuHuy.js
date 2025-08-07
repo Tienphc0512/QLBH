@@ -8,9 +8,9 @@ import {
     RefreshControl,
     TouchableOpacity
 } from 'react-native';
-import { useAuth } from '../context/Auth';
-import { fetchCancelDetailsHis } from '../service/api';
-import Thongtingiaohang from './Modal/Thongtingiaohang';
+import { useAuth } from '../../context/Auth';
+import { fetchCancelDetailsHis } from '../../service/api';
+import Thongtingiaohang from '../Modal/Thongtingiaohang';
 
 export default function DonHangDaHuy() {
     const { token } = useAuth();
@@ -90,3 +90,53 @@ export default function DonHangDaHuy() {
         </View>
     );
 }
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f4f6f8',
+    padding: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+    color: '#2c3e50',
+  },
+  orderItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  orderCode: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#34495e',
+    marginBottom: 6,
+  },
+  infoText: {
+    fontSize: 15,
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f4f6f8',
+  },
+  empty: {
+    textAlign: 'center',
+    marginTop: 30,
+    fontSize: 16,
+    color: '#7f8c8d',
+  },
+});

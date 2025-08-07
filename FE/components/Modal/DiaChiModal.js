@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ToastAndroid } from 'react-native';
 import { fetchDiaChi, updateDiaChi, deleteDiaChi, addDiaChi } from '../../service/api';
 import { useAuth } from '../../context/Auth';
 
@@ -30,10 +30,11 @@ export default function DiaChiModal({ visible, onClose }) {
 
   const handleUpdate = async (index) => {
     try {
-      await updateDiaChi(list[index]._id, {
+      await updateDiaChi(list[index].id, {
         diachi: list[index].diachi,
         macdinh: list[index].macdinh
       }, token);
+      ToastAndroid.show('Cập nhật địa chỉ thành công', ToastAndroid.SHORT);
       setEditIndex(null);
       loadDiaChi();
     } catch (err) {
@@ -45,6 +46,7 @@ export default function DiaChiModal({ visible, onClose }) {
     try {
       await deleteDiaChi(id, token);
       loadDiaChi();
+      ToastAndroid.show('Xóa địa chỉ thành công', ToastAndroid.SHORT);
     } catch (err) {
       alert(err.message);
     }
@@ -57,6 +59,7 @@ const handleAdd = async () => {
     await addDiaChi({ diachi: newDiaChi, macdinh: false }, token);
     setNewDiaChi('');
     loadDiaChi();
+    ToastAndroid.show('Thêm địa chỉ thành công', ToastAndroid.SHORT);
   } catch (err) {
     alert(err.message);
   }
@@ -93,7 +96,7 @@ const handleAdd = async () => {
         <ScrollView>
           {loading ? <Text>Đang tải...</Text> :
             list.map((item, index) => (
-              <View key={item._id} style={styles.item}>
+              <View key={item._id || index.toString()} style={styles.item}>
                 {editIndex === index ? (
                   <>
                     <TextInput
@@ -123,12 +126,16 @@ const handleAdd = async () => {
                 ) : (
                   <>
                     <Text style={styles.text}>Địa chỉ: {item.diachi}</Text>
-                    <Text style={styles.text}>Mặc định: {item.macdinh ? 'Chính' : 'Phụ'}</Text>
+                    <Text style={styles.text}>
+  Loại địa chỉ: {item.macdinh ? 'Chính' : 'Phụ'}
+</Text>
+
+
                     <View style={styles.buttonRow}>
                       <TouchableOpacity onPress={() => setEditIndex(index)} style={styles.editBtn}>
                         <Text style={styles.btnText}>Sửa</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDelete(item._id)} style={styles.deleteBtn}>
+                      <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
                         <Text style={styles.btnText}>Xóa</Text>
                       </TouchableOpacity>
                     </View>

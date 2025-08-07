@@ -19,23 +19,6 @@ const TaiKhoan = () => {
     const { logout, token } = useAuth();
     const [showDiaChiModal, setShowDiaChiModal] = useState(false);
 
-
-
-    // useEffect(() => {
-        
-    //     const getTaiKhoan = async () => {
-    //         setLoading(true);
-    //         try {
-    //             const data = await fetchTaiKhoan(token);
-    //             setFormData(data);
-    //         } catch (err) {
-    //             Alert.alert('Lỗi', err.message);
-    //         }
-    //         setLoading(false);
-    //     };
-    //     getTaiKhoan();
-    // }, [token]);
-
     useFocusEffect(
   React.useCallback(() => {
   const getTaiKhoan = async () => {

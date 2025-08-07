@@ -10,7 +10,8 @@ import {
   TextInput,
   Alert,
   ToastAndroid,
-  StyleSheet
+  StyleSheet,
+  FlatList
 } from 'react-native';
 import { fetchSanPham } from '../service/api';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -126,40 +127,42 @@ const SanPhamTheoDanhMuc = () => {
 
   return (
     <>
-      <ScrollView style={styles.container}>
-        {sanPham.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.card}
-            onPress={() => navigation.navigate('Chi tiết sản phẩm', { sanpham: item })}
-          >
-            <Image source={{ uri: item.hinhanh }} style={styles.image} />
-            <View style={styles.info}>
-              <Text style={styles.name}>{item.ten_san_pham}</Text>
-              <Text style={styles.price}>{item.gia.toLocaleString()}₫</Text>
-              <Text style={styles.quantityInput}>Tồn kho: {item.soluong}</Text>
+<FlatList
+  data={sanPham}
+  keyExtractor={(item) => item?.id?.toString()}
+  contentContainerStyle={styles.container}
+  renderItem={({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('Chi tiết sản phẩm', { sanpham: item })}
+    >
+      <Image source={{ uri: item.hinhanh }} style={styles.image} />
+      <View style={styles.info}>
+        <Text style={styles.name}>{item.ten_san_pham}</Text>
+        <Text style={styles.price}>{item.gia.toLocaleString()}₫</Text>
+        <Text style={styles.quantityInput}>Tồn kho: {item.soluong}</Text>
 
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity style={styles.cartButton} onPress={() => handleAddToCart(item)}>
-                  <Text style={styles.buttonText}>Thêm</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(item)}>
-                  <Text style={styles.buttonText}>Mua</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.detailButton}
-                  onPress={() => navigation.navigate("Chi tiết sản phẩm", { item })}
-                >
-                  <Text style={styles.detailText}>Chi tiết</Text>
-                </TouchableOpacity>
-              </View>
-
-            </View>
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity style={styles.cartButton} onPress={() => handleAddToCart(item)}>
+            <Text style={styles.buttonText}>Thêm</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+
+          <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(item)}>
+            <Text style={styles.buttonText}>Mua</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.detailButton}
+            onPress={() => navigation.navigate("Chi tiết sản phẩm", { item })}
+          >
+            <Text style={styles.detailText}>Chi tiết</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  )}
+/>
+
 
       <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
         <View style={styles.overlay}>

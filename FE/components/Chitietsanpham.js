@@ -48,51 +48,72 @@ const ChiTietSanPham = () => {
   }, [item.id]);
 
   const handleIncrease = () => {
-    const tonKho = parseInt(sanpham.soluong); // đảm bảo kiểu số
+    const tonKho = parseInt(sanpham.soluong);
+    const current = parseInt(soluong) || 0; // Nếu rỗng thì coi là 0
 
-    if (soluong + 1 > tonKho) {
+    if (current + 1 > tonKho) {
       Alert.alert('Thông báo', 'Số lượng vượt quá tồn kho!');
     } else {
-      setSoluong(prev => prev + 1);
+      setSoluong(current + 1);
     }
   };
 
 
   const handleDecrease = () => {
-    setSoluong(prev => (prev > 1 ? prev - 1 : 1));
+    const current = parseInt(soluong) || 1;
+    setSoluong(current > 1 ? current - 1 : 1);
   };
 
-const handleAddToCart = (item) => {
-  const parsedSoLuong = parseInt(soluong);
-  const validatedSoluong = !parsedSoLuong || parsedSoLuong <= 0 ? 1 : parsedSoLuong;
+  const handleAddToCart = (item) => {
+    const parsedSoLuong = parseInt(soluong);
+    const validatedSoluong = !parsedSoLuong || parsedSoLuong <= 0 ? 1 : parsedSoLuong;
 
-  addToCart({ ...item, soluong: validatedSoluong });
-  ToastAndroid.show(`${item.ten} đã được thêm vào giỏ`, ToastAndroid.SHORT);
-};
+    addToCart({ ...item, soluong: validatedSoluong });
+    ToastAndroid.show(`${item.ten} đã được thêm vào giỏ`, ToastAndroid.SHORT);
+  };
 
   // hàm xử lý số lượng khi nhập tay
-  const handleChangeSoluong = (text, max) => {
-    const newValue = parseInt(text);
+const handleChangeSoluong = (text, max) => {
+  // Cho phép rỗng để người dùng nhập tiếp
+  if (text.trim() === '') {
+    setSoluong(''); 
+    return;
+  }
 
-    if (!text || isNaN(newValue) || newValue <= 0) {
-      setSoluong('');
-      return;
-    }
+  const newValue = parseInt(text);
+  if (isNaN(newValue)) return;
 
-    if (newValue > max) {
-      Alert.alert('Thông báo', `Số lượng vượt quá tồn kho! (Tối đa: ${max})`);
-      setSoluong(max);
-    } else {
-      setSoluong(newValue);
-    }
-  };
+  if (newValue > max) {
+    Alert.alert('Thông báo', `Số lượng vượt quá tồn kho! (Tối đa: ${max})`);
+    setSoluong(max.toString());
+  } else {
+    setSoluong(text);
+  }
+};
 
 
   const handleOrderNow = () => {
+      const parsedSoluong = parseInt(soluong);
+
+  if (!parsedSoluong || parsedSoluong <= 0) {
+    Alert.alert('Lỗi', 'Vui lòng nhập số lượng hợp lệ (ít nhất 1)');
+    return;
+  }
+
+  if (parsedSoluong > parseInt(sanpham.soluong)) {
+    Alert.alert('Lỗi', 'Số lượng vượt quá tồn kho');
+    return;
+  }
     navigation.navigate('Đặt hàng', {
-      item: { ...sanpham, tongtien },
+      sp: {
+        ...sanpham,
+        soluong,
+        ten_san_pham: sanpham.ten,
+        anh_dai_dien: sanpham.anh_dai_dien || sanpham.hinhanh?.[0] || '',
+      },
     });
   };
+
 
   if (loading || !sanpham) {
     return (
@@ -126,10 +147,9 @@ const handleAddToCart = (item) => {
           style={styles.quantityInput}
           keyboardType="numeric"
           value={soluong.toString()}
-          onChangeText={(text) =>
-            handleChangeSoluong(text, sanpham.soluong)
-          }
+          onChangeText={(text) => handleChangeSoluong(text, sanpham.soluong)}
         />
+
 
 
         <TouchableOpacity onPress={handleIncrease}>
@@ -139,8 +159,8 @@ const handleAddToCart = (item) => {
 
       <View style={styles.buttonGroup}>
         <TouchableOpacity style={styles.cartButton} onPress={() => handleAddToCart(sanpham)}>
-  <Text style={styles.buttonText}>Thêm vào giỏ</Text>
-</TouchableOpacity>
+          <Text style={styles.buttonText}>Thêm vào giỏ</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.orderButton} onPress={handleOrderNow}>
           <Text style={styles.buttonText}>Đặt hàng</Text>

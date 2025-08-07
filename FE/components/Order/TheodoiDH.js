@@ -10,15 +10,15 @@ import {
   Alert,
   ToastAndroid  
 } from 'react-native';
-import { useAuth } from '../context/Auth';
+import { useAuth } from '../../context/Auth';
 import { useRoute } from '@react-navigation/native';
-import {cancelOrder, fetchOrderDetails } from '../service/api'; // Import cancelOrder nếu cần
+import {cancelOrder, fetchOrderDetails } from '../../service/api'; // Import cancelOrder nếu cần
 import Checkbox from 'expo-checkbox';
-import Thongtingiaohang from './Modal/Thongtingiaohang';
+import Thongtingiaohang from '../Modal/Thongtingiaohang';
 
 
 export default function TheodoiDH() {
-  const { token } = useAuth();
+  const { token, userId } = useAuth();
   const route = useRoute();
   const { orderInfo } = route.params || {};
   
@@ -37,6 +37,7 @@ const [selectedOrderInfo, setSelectedOrderInfo] = useState(null);
     try {
       setRefreshing(true);
       const result = await fetchOrderDetails(id, token); // api đơn hàng chi tiết đã có sắp xếp desc từ truy vâsn
+      console.log(">> Kết quả fetchOrderDetails:", result);
       setOrders(result || []);
     } catch (error) {
       console.error('Lỗi khi tải đơn hàng:', error);
@@ -49,13 +50,15 @@ const [selectedOrderInfo, setSelectedOrderInfo] = useState(null);
 
   useEffect(() => {
     if (!orderInfo) {
-      loadOrders(); // Nếu không có orderInfo, fetch tất cả
+      loadOrders(userId); // gọi userId vì giỏ hàng lưu data theo userId
+
+
     } else {
       // Nếu có orderInfo, hiển thị đơn đó
       setOrders([orderInfo]);
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
  const handleCancelOrders = async () => {
   Alert.alert(
@@ -74,7 +77,7 @@ const [selectedOrderInfo, setSelectedOrderInfo] = useState(null);
             }
             ToastAndroid.show('Hủy các đơn hàng thành công!', ToastAndroid.SHORT);
             setSelectedOrders([]); 
-            loadOrders();
+            loadOrders(userId);
           } catch (error) {
             console.error('Lỗi khi huỷ nhiều đơn:', error);
             ToastAndroid.show('Hủy đơn hàng thất bại.', ToastAndroid.SHORT);
@@ -219,9 +222,10 @@ const renderItem = ({ item }) => {
   <FlatList
     data={orders}
     keyExtractor={(item, index) => `${item.id}-${index}`}
+    // keyExtractor={(item) => `${item.dathang_id}`}
     renderItem={renderItem}
     refreshControl={
-      <RefreshControl refreshing={refreshing} onRefresh={loadOrders} />
+    <RefreshControl refreshing={refreshing} onRefresh={() => loadOrders(userId)} />
     }
     contentContainerStyle={orders.length === 0 && styles.center}
     ListEmptyComponent={<Text>Không có đơn hàng nào.</Text>}

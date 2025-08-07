@@ -13,8 +13,8 @@ import {
   Image,
   ToastAndroid
 } from 'react-native';
-import { placeOrder, fetchOrderDetails, fetchTaiKhoan, updateTaiKhoan, fetchDiaChi } from '../service/api';
-import { useAuth } from '../context/Auth';
+import { placeOrder, fetchOrderDetails, fetchTaiKhoan, updateTaiKhoan, fetchDiaChi } from '../../service/api';
+import { useAuth } from '../../context/Auth';
 import { useNavigation } from '@react-navigation/native';
 
 
@@ -26,23 +26,23 @@ export default function DatHang({ route }) {
   });
 
   const { token } = useAuth();
+
   const [orderId, setOrderId] = useState('');
   const [orderInfo, setOrderInfo] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [userInfo, setUserInfo] = useState({ username: '', sdt: '' });
   const [showModal, setShowModal] = useState(false);
-  const selectedItem = route?.params?.sp; // nếu từ 1 sản phẩm cụ thể
-  const { selectedProducts } = route.params ?? {};
+const { sp: selectedItem } = route.params ?? {};
+ // nếu từ 1 sản phẩm cụ thể
+  const { selectedProducts } = route.params ?? {}; // nếu từ giỏ hàng
   console.log("Sản phẩm được truyền qua:", selectedProducts);
 
-  // nếu từ giỏ hàng
+
 
   const [diaChiList, setDiaChiList] = useState([]);
   const [selectedDiaChiId, setSelectedDiaChiId] = useState(null);
-  // const [modalVisible, setModalVisible] = useState(false); // CTDH
   const navigation = useNavigation();
-
 
 
   const fetchInfoAndInitOrder = async () => {
@@ -104,95 +104,35 @@ export default function DatHang({ route }) {
   }, [selectedItem]); // và phải gọi lại khi selectedItem thay đổi 
 
 
-
-
-  //   const convertTrangThai = (trangthai) => {
-  //   switch (trangthai) {
-  //     case 'choxuly':
-  //       return 'Chờ xử lý';
-  //     case 'danggiao':
-  //       return 'Đang giao';
-  //     case 'dagiao':
-  //       return 'Đã giao';
-  //     case 'dahuy':
-  //       return 'Đã huỷ';
-  //     default:
-  //       return trangthai;
-  //   }
-  // };
-
-  // const convertThanhToan = (tt) => {
-  //   switch (tt) {
-  //     case 'chuathanhtoan':
-  //       return 'Chưa thanh toán';
-  //     case 'dathanhtoan':
-  //       return 'Đã thanh toán';
-  //     default:
-  //       return tt;
-  //   }
-  // };
-
-
-  // const handlePlaceOrder = async () => {
-  //   const item = orderDetails.items[0];
-  //   console.log(">> Bắt đầu đặt hàng");
-  //   console.log(">> orderDetails:", orderDetails);
-  //   if (item.soluong > selectedItem.soluong) {
-  //     setMessage('Số lượng vượt quá tồn kho!');
-  //     console.log(">> Quá tồn kho!");
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   setMessage('');
-  //   try {
-  //     console.log(">> Gửi API đặt hàng...");
-  //     const data = await placeOrder(orderDetails, token);
-  //     console.log(">> Kết quả từ API:", data);
-
-  //     const newOrderId = data.dathang_id.toString();
-  //     setOrderId(newOrderId);
-  //     setMessage(`Đặt hàng thành công! Mã đơn hàng: ${newOrderId}`);
-
-  //     try {
-  //       const details = await fetchOrderDetails(newOrderId, token);
-  //       setOrderInfo(details);
-  //     } catch (err) {
-  //       console.log(">> Lỗi khi fetchOrderDetails:", err);
-  //       Alert.alert("Lỗi", "Không thể tải chi tiết đơn hàng.");
-  //     }
-
-  //   } catch (err) {
-  //     console.log(">> Lỗi khi đặt hàng:", err);
-  //     setMessage(err.message || "Lỗi không xác định");
-  //   }
-  //   setLoading(false);
-  // };
-
 const handlePlaceOrder = async () => {
-  const item = orderDetails.items[0];
-  console.log(">> Bắt đầu đặt hàng");
-  console.log(">> orderDetails:", orderDetails);
-
-  if (item.soluong > selectedItem.soluong) {
-    setMessage('Số lượng vượt quá tồn kho!');
-    console.log(">> Quá tồn kho!");
-    return;
-  }
-
   setLoading(true);
   setMessage('');
 
-  try {
-    console.log(">> Gửi API đặt hàng...");
+  // Kiểm tra tồn kho nếu đi từ giỏ hàng
+  if (selectedProducts && selectedProducts.length > 0) {
+    for (let i = 0; i < selectedProducts.length; i++) {
+      const cartItem = selectedProducts[i];
+      const orderItem = orderDetails.items[i];
+      if (orderItem.soluong > cartItem.tonKho) {
+        setMessage(`Sản phẩm "${cartItem.ten_san_pham}" vượt quá tồn kho!`);
+        setLoading(false);
+        return;
+      }
+    }
+  }
 
-    // GỬI orderDetails kèm diachi_id
+  // Kiểm tra tồn kho nếu đi từ sản phẩm riêng lẻ (các màn hình khác)
+  if (selectedItem && orderDetails.items[0].soluong > selectedItem.soluong) {
+    setMessage('Số lượng vượt quá tồn kho!');
+    setLoading(false);
+    return;
+  }
+
+  try {
     const data = await placeOrder(
-      { ...orderDetails, diachi_id: selectedDiaChiId }, 
+      { ...orderDetails, diachi_id: selectedDiaChiId },
       token
     );
-
-    console.log(">> Kết quả từ API:", data);
 
     const newOrderId = data.dathang_id.toString();
     setOrderId(newOrderId);
@@ -202,7 +142,6 @@ const handlePlaceOrder = async () => {
       const details = await fetchOrderDetails(newOrderId, token);
       setOrderInfo(details);
     } catch (err) {
-      console.log(">> Lỗi khi fetchOrderDetails:", err);
       Alert.alert("Lỗi", "Không thể tải chi tiết đơn hàng.");
     }
 
@@ -210,11 +149,12 @@ const handlePlaceOrder = async () => {
     console.log(">> Lỗi khi đặt hàng:", err);
     setMessage(err.message || "Lỗi không xác định");
   }
+
   setLoading(false);
 };
 
   const handleFetchOrderDetailsWithId = () => {
-    navigation.navigate("Theo dõi đơn", {  orderInfo: {
+    navigation.navigate("Theo dõi đơn", {  orderDetails: {
     
   } })
     setLoading(true);
@@ -249,10 +189,6 @@ const handlePlaceOrder = async () => {
     }
   };
 
-
-
-  // const canCancel =
-  //   orderInfo && orderInfo.length > 0 && orderInfo[0].trangthai === 'choxuly';
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}
@@ -318,7 +254,7 @@ const handlePlaceOrder = async () => {
 <TouchableOpacity
   onPress={() => {
     const newItems = [...orderDetails.items];
-    console.log(">>> Tăng số lượng:", newItems[index]);
+    // console.log(">>> Tăng số lượng:", newItems[index]);
 
     if (newItems[index].soluong < newItems[index].tonKho) {
       newItems[index].soluong += 1;
@@ -344,7 +280,9 @@ const handlePlaceOrder = async () => {
     <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
       Tổng tiền: {Number(orderDetails.tongtien).toLocaleString()}đ
     </Text>
+    
   </>
+  
 )}
 
 
@@ -382,11 +320,11 @@ const handlePlaceOrder = async () => {
         </View>
       )}
 
-      <Text style={{ marginTop: 15 }}>Số lượng:</Text>
-
       {orderDetails.items.length > 0 && selectedItem && (
         <>
+         <Text style={{ marginTop: 15 }}>Số lượng:</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+                 
             <TouchableOpacity
               onPress={() => {
                 const currentQty = orderDetails.items[0]?.soluong ?? 1;

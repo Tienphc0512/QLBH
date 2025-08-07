@@ -7,9 +7,9 @@ import {
     ActivityIndicator,
     RefreshControl
 } from 'react-native';
-import { useAuth } from '../context/Auth';
-import { fetchOrderHistory } from '../service/api';
-import Thongtingiaohang from './Modal/Thongtingiaohang';
+import { useAuth } from '../../context/Auth';
+import { fetchOrderHistory } from '../../service/api';
+import Thongtingiaohang from '../Modal/Thongtingiaohang';
 
 export default function LichSuDatHang() {
     const { token } = useAuth();

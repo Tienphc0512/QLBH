@@ -9,15 +9,15 @@ import {
   Alert,
   ToastAndroid
 } from "react-native";
-import { useCart } from "../context/CartContext";
-import { removeFromCart as removeFromCartAPI} from "../service/api";
-import { useAuth } from "../context/Auth";
+import { useCart } from "../../context/CartContext";
+import { removeFromCart as removeFromCartAPI} from "../../service/api";
+import { useAuth } from "../../context/Auth";
 import { useNavigation } from "@react-navigation/native";
 import Checkbox from "expo-checkbox";
 
 const GioHang = () => {
   const { cartItems, removeFromCart } = useCart();
-  const [loadingId, setLoadingId] = useState(null);
+  // const [loadingId, setLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
@@ -45,7 +45,7 @@ const handlePlaceOrder = async () => {
       //  quantity: item.quantity || 1, 
     }));
 
-  navigation.navigate("Đặt hàng", { selectedProducts });
+  navigation.navigate("Đặt hàng", { selectedProducts, token  });
 };
 
 
@@ -60,7 +60,7 @@ const handlePlaceOrder = async () => {
       <View style={{ flex: 1 }}>
         <Text style={styles.itemName}>{item.ten} {item.ten_san_pham}</Text>
         <Text>Số lượng: {item.soluong}</Text>
-        <Text>Giá: {item.gia.toLocaleString()} VNĐ</Text>
+        <Text>Giá: {parseInt(item.gia).toLocaleString()} VNĐ</Text>
       </View>
     </View>
   );
