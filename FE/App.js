@@ -17,11 +17,11 @@ import DangKy from "./components/DangKy";
 import Chitietsanpham from "./components/Chitietsanpham";
 import Danhmuc from "./components/Danhmucsp";
 import Sanpham from "./components/Sanpham";
-import LichSuChatBot from "./components/LichSuChatBot";
+import LichSuChatBot from "./components/Chatbot/LichSuChatBot";
 import TimKiem from "./components/TimKiem"; 
 import ThongBao from "./components/ThongBao";
 import DonHang from "./components/DatHang";
-import Chatbot from "./components/Chatbot";
+import Chatbot from "./components/Chatbot/Chatbot";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();

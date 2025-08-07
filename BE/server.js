@@ -12,6 +12,7 @@ const port = 3000;
 const SECRET_KEY = "jahsjkiojwejkdfnlkjaslkjskda";
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); 
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -173,6 +174,8 @@ app.put('/api/diachi/:id', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Lỗi khi cập nhật địa chỉ' });
   }
 });
+
+
  //xóa địa chỉ
 app.delete('/api/diachi/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
@@ -400,6 +403,7 @@ app.post("/api/dat_hang", verifyToken, async (req, res) => {
 
 // Thêm chi tiết đơn hàng
 for (const item of items) {
+  console.log(">> Insert chi tiết:", item); 
   await pool.query(
     "INSERT INTO chitietdathang (dathang_id, sanpham_id, soluong, dongia) VALUES ($1, $2, $3, $4)",
     [dathang_id, item.sanpham_id, item.soluong, item.dongia]
@@ -501,32 +505,38 @@ app.delete("/api/huy_don_hang/:id", verifyToken, async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    //  Tạo thông báo TRƯỚC khi xóa
+    // Thêm thông báo
     await client.query(
       "INSERT INTO thongbao (user_id, dathang_id, noidung) VALUES ($1, $2, $3)",
       [user_id, dathang_id, `Bạn đã huỷ đơn hàng #${dathang_id}`]
     );
 
-   // Cập nhật trạng thái đơn hàng thành "Đã hủy" chứ kh xóa tất cả 
-const result = await client.query(
-  "UPDATE dathang SET trangthai = $1 WHERE id = $2 AND user_id = $3",
-  ['dahuy', dathang_id, user_id]
-);
+    // Cập nhật trạng thái đơn hàng
+    const result = await client.query(
+      "UPDATE dathang SET trangthai = $1 WHERE id = $2 AND user_id = $3",
+      ['dahuy', dathang_id, user_id]
+    );
 
-// Sau khi cập nhật trạng thái
-const spResult = await client.query(
-  "SELECT sanpham_id, soluong FROM chitietdathang WHERE dathang_id = $1",
-  [dathang_id]
-);
+    // Cộng lại số lượng vào kho
+    const spResult = await client.query(
+      "SELECT sanpham_id, soluong FROM chitietdathang WHERE dathang_id = $1",
+      [dathang_id]
+    );
+    for (const sp of spResult.rows) {
+      await client.query(
+        "UPDATE sanpham SET soluong = soluong + $1 WHERE id = $2",
+        [sp.soluong, sp.sanpham_id]
+      );
+    }
 
-// Cộng lại số lượng vào kho
-for (const sp of spResult.rows) {
-  await client.query(
-    "UPDATE sanpham SET soluong = soluong + $1 WHERE id = $2",
-    [sp.soluong, sp.sanpham_id]
-  );
-}
+    // Thêm vào bảng lichsuhuy
+    await client.query(
+      `INSERT INTO lichsuhuy (user_id, dathang_id, ngayhuy) 
+       VALUES ($1, $2, NOW())`,
+      [user_id, dathang_id]
+    );
 
+    // Kiểm tra nếu không có dòng nào được cập nhật
     if (result.rowCount === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
@@ -554,7 +564,7 @@ app.get("/api/thongbao", verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Lỗi khi lấy thông báo" });
+    res.status(500).json({ error: "Lỗi khi lấy thông báo" });   
   }
 });
 
@@ -654,36 +664,29 @@ app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
 });
 
 
-// xem lịch sử hủy đơn hàng 
-// app.get("/api/chi_tiet_huy_don_hang/:id", verifyToken, async (req, res) => {
-//   const dathang_id = req.params.id;
-//   try {
-//     const result = await pool.query(
-//       "SELECT * FROM lichsuhuy WHERE dathang_id = $1 AND user_id = $2",
-//       [dathang_id, req.userId]
-//     );
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ error: "Không tìm thấy lịch sử hủy đơn hàng" });
-//     }
-//     res.json(result.rows);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Lỗi khi lấy lịch sử hủy đơn hàng" });
-//   }
-// });
 
-app.get("/api/lich_su_huy_don_hang", verifyToken, async (req, res) => {
+
+// xem lịch sử hủy đơn hàng 
+app.get('/api/lich_su_huy_don_hang', verifyToken, async (req, res) => {
+  const user_id = req.userId;
   try {
-    const result = await pool.query(
-      "SELECT * FROM lichsuhuy WHERE user_id = $1 ORDER BY ngay_huy DESC",
-      [req.userId]
-    );
+    const result = await pool.query(`
+      SELECT lh.*, sp.ten as tensanpham, ct.dongia, ct.soluong, dh.tongtien
+      FROM lichsuhuy lh
+      JOIN dathang dh ON dh.id = lh.dathang_id
+      JOIN chitietdathang ct ON ct.dathang_id = lh.dathang_id
+      JOIN sanpham sp ON sp.id = ct.sanpham_id
+      WHERE lh.user_id = $1
+      ORDER BY lh.ngayhuy DESC
+    `, [user_id]);
+    
     res.json(result.rows);
   } catch (err) {
-    console.error("Lỗi khi lấy lịch sử hủy đơn hàng:", err);
-    res.status(500).json({ error: "Lỗi khi lấy lịch sử hủy đơn hàng" });
+    console.error(err);
+    res.status(500).json({ error: 'Lỗi khi lấy lịch sử huỷ đơn hàng' });
   }
 });
+
 
 // xem lịch sử tìm kiếm trên chatbot
 app.get("/api/lich_su_tim_kiem", verifyToken, async (req, res) => {

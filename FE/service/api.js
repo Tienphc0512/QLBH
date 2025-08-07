@@ -69,7 +69,6 @@ export async function fetchTaiKhoan(token) {
 }
 
 //thêm api xem địa chỉ 
-
 export async function addDiaChi({ diachi, macdinh }, token) {
   try {
     const response = await axios.post(`${BASE_URL}/api/diachi`, {
@@ -293,6 +292,7 @@ export async function fetchOrderHistory(token) {
   }
 }
 
+//api đặt hàng
 export async function placeOrder(orderDetails, token) { 
   try {
     const response = await axios.post(`${BASE_URL}/api/dat_hang`, orderDetails, {
@@ -333,11 +333,29 @@ export async function fetchOrderDetails(orderId, token) {
   }
 }
 
+//api xem lịch sử đã hủy đơn hàng 
+export const fetchCancelDetailsHis = async (token) => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/lich_su_huy_don_hang`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi khi lấy lịch sử hủy đơn hàng:', error);
+    throw error.response?.data || { error: 'Lỗi không xác định' };
+  }
+};
+
 
 // api xem thông báo
 export async function fetchNotifications(token) {
   try {
-    const response = await axios.get(`${BASE_URL}/api/thong_bao`, {
+    const response = await axios.get(`${BASE_URL}/api/thongbao`, {
       headers: {
         Authorization: `Bearer ${token}`
       } 
@@ -354,22 +372,22 @@ export async function fetchNotifications(token) {
 } 
 
 // api đánh dấu là đã đọc thông báo 
-export async function markNotificationAsRead(notificationId, token) {
-  try {
-    const response = await axios.put(`${BASE_URL}/api/thong_bao/${notificationId}/read`, {}, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return response.data;
-  } catch (error) {
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.error || 'Đánh dấu thông báo thất bại');
-    } else {
-      throw new Error('Không thể kết nối đến máy chủ');
-    }
-  }
-}
+// export async function markNotificationAsRead(notificationId, token) {
+//   try {
+//     const response = await axios.put(`${BASE_URL}/api/thongbao/${notificationId}/read`, {}, {
+//       headers: {
+//         Authorization: `Bearer ${token}`
+//       }
+//     });
+//     return response.data;
+//   } catch (error) {
+//     if (error.response && error.response.data) {
+//       throw new Error(error.response.data.error || 'Đánh dấu thông báo thất bại');
+//     } else {
+//       throw new Error('Không thể kết nối đến máy chủ');
+//     }
+//   }
+// }
 
 //api huỷ đơn hàng
 export async function cancelOrder(orderId, token) {
@@ -388,6 +406,7 @@ export async function cancelOrder(orderId, token) {
     }
   }
 }
+
 // aoi xem lịch sử tìm kiếm = ai
 export async function fetchChatHistoryAI(token) {
   try {
