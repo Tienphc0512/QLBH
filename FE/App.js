@@ -7,9 +7,8 @@ import { CartProvider } from "./context/CartContext";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import TrangChu from "./components/TrangChu";
-import GioHang from "./components/GioHang";
-import DonHang from "./components/DatHang";
-import Chatbot from "./components/Chatbot";
+import GioHang from "./components/Order/GioHang";
+import TheodoiDH from "./components/Order/TheodoiDH";
 import TaiKhoan from "./components/TaiKhoan";
 
 import DangNhap from "./components/DangNhap";
@@ -17,14 +16,21 @@ import DangKy from "./components/DangKy";
 
 import Chitietsanpham from "./components/Chitietsanpham";
 import Danhmuc from "./components/Danhmucsp";
-import Sanpham from "./components/Sanpham";
-import LichSuChatBot from "./components/LichSuChatBot";
+// import Sanpham from "./components/Sanpham";
+import LichSuChatBot from "./components/Chatbot/LichSuChatBot";
 import TimKiem from "./components/TimKiem"; 
 import ThongBao from "./components/ThongBao";
+import DonHang from "./components/Order/DatHang";
+import Chatbot from "./components/Chatbot/Chatbot";
+import LichSuDatHang from "./components/History/LichsuDatHang";
+import LichsuHuy from "./components/History/LichsuHuy"
 
+// import DiaChiModal from "./components/Modal/DiaChiModal";
+// import Thongtingiaohang from "./components/Modal/Thongtingiaohang";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
 
 const AppTheme = {
   ...DefaultTheme,
@@ -48,7 +54,7 @@ function MainTabs() {
 
           if (route.name === 'Trang chủ') iconName = 'home-outline';
           else if (route.name === 'Giỏ hàng') iconName = 'cart-outline';
-          else if (route.name === 'Đơn hàng') iconName = 'receipt-outline';
+          else if (route.name === 'Theo dõi đơn') iconName = 'receipt-outline';
           // else if (route.name === 'Chatbot') iconName = 'chatbubbles-outline';
           else if (route.name === 'Tài khoản') iconName = 'person-outline';
 
@@ -61,7 +67,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Trang chủ" component={TrangChu} />
       <Tab.Screen name="Giỏ hàng" component={GioHang} />
-      <Tab.Screen name="Đơn hàng" component={DonHang} />
+      <Tab.Screen name="Theo dõi đơn" component={TheodoiDH} />
       {/* <Tab.Screen name="Chatbot" component={Chatbot} /> */}
       <Tab.Screen name="Tài khoản" component={TaiKhoan} />
     </Tab.Navigator>
@@ -96,13 +102,13 @@ function MainNavigator() {
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen name="DanhMuc" component={Danhmuc} options={{ title: "Danh mục" }} />
-          <Stack.Screen
+          {/* <Stack.Screen
             name="SanPham"
             component={Sanpham}
             options={({ route }) => ({
-              title: route.params?.danhmucTen || 'Sản phẩm',
+              title: route.params?.tenDanhMuc || 'Sản phẩm',
             })}
-          />
+          /> */}
           <Stack.Screen
             name="Chitietsanpham"
             component={Chitietsanpham}
@@ -114,10 +120,13 @@ function MainNavigator() {
           <Stack.Screen name="Thông báo" component={ThongBao} options={{ title: "Thông báo" }} />
           <Stack.Screen name="Chatbot" component={Chatbot} options={{ title: "Chat với AI" }} />
           <Stack.Screen name="Chi tiết sản phẩm" component={Chitietsanpham} options={{ title: "Chi tiết sản phẩm" }} />
-          <Stack.Screen name="Sản phẩm" component={Sanpham} options={{ title: "Sản phẩm" }} />
-          <Stack.Screen name="Danh mục sản phẩm" component={Danhmuc} options={{ title: "Danh mục sản phẩm" }} />
-        
-          
+          {/* <Stack.Screen name="Sản phẩm" component={Sanpham} options={{ title: "Sản phẩm" }} /> */}
+          <Stack.Screen name="Danh mục sản phẩm" component={Danhmuc} options={({ route }) => ({
+    title: route.params?.ten || 'Danh mục',
+  })} />
+          <Stack.Screen name="Lịch sử hủy" component={LichsuHuy} options={{ title: "Đã hủy" }} />
+          <Stack.Screen name="Theo dõi đơn" component={TheodoiDH} options={{ title: "Theo dõi đơn" }} />
+
         </>
       ) : (
         <>

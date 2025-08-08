@@ -9,12 +9,13 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  ToastAndroid
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useCart } from '../context/CartContext'; 
-import { fetchChiTietSanPham } from '../service/api'; 
-import { useAuth } from '../context/Auth'; 
+import { useCart } from '../context/CartContext';
+import { fetchChiTietSanPham } from '../service/api';
+import { useAuth } from '../context/Auth';
 
 
 const DEFAULT_IMAGE = 'https://via.placeholder.com/150';
@@ -28,7 +29,7 @@ const ChiTietSanPham = () => {
   const [loading, setLoading] = useState(true);
 
 
-  const { token } = useAuth(); 
+  const { token } = useAuth();
   const { addToCart } = useCart();
 
   useEffect(() => {
@@ -46,58 +47,73 @@ const ChiTietSanPham = () => {
     loadChiTiet();
   }, [item.id]);
 
-const handleIncrease = () => {
-  const tonKho = parseInt(sanpham.soluong); // đảm bảo kiểu số
+  const handleIncrease = () => {
+    const tonKho = parseInt(sanpham.soluong);
+    const current = parseInt(soluong) || 0; // Nếu rỗng thì coi là 0
 
-  if (soluong + 1 > tonKho) {
-    Alert.alert('Thông báo', 'Số lượng vượt quá tồn kho!');
-  } else {
-    setSoluong(prev => prev + 1);
-  }
-};
+    if (current + 1 > tonKho) {
+      Alert.alert('Thông báo', 'Số lượng vượt quá tồn kho!');
+    } else {
+      setSoluong(current + 1);
+    }
+  };
 
 
   const handleDecrease = () => {
-    setSoluong(prev => (prev > 1 ? prev - 1 : 1));
+    const current = parseInt(soluong) || 1;
+    setSoluong(current > 1 ? current - 1 : 1);
   };
 
-const handleAddToCart = () => {
-  addToCart({ ...sanpham, soluong }); 
-  Alert.alert('Đã thêm vào giỏ hàng');
-};
+  const handleAddToCart = (item) => {
+    const parsedSoLuong = parseInt(soluong);
+    const validatedSoluong = !parsedSoLuong || parsedSoLuong <= 0 ? 1 : parsedSoLuong;
 
-// hàm xử lý số lượng khi nhập tay
-const handleChangeSoluong = (text, productId, max) => {
-  const newValue = parseInt(text);
+    addToCart({ ...item, soluong: validatedSoluong });
+    ToastAndroid.show(`${item.ten} đã được thêm vào giỏ`, ToastAndroid.SHORT);
+  };
 
-  if (!text || isNaN(newValue) || newValue <= 0) {
-   //nếu text rỗng hoặc không phải số, đặt về 1
-    setSoluong((prev) => ({
-      ...prev,
-      [productId]: '',
-    }));
+  // hàm xử lý số lượng khi nhập tay
+const handleChangeSoluong = (text, max) => {
+  // Cho phép rỗng để người dùng nhập tiếp
+  if (text.trim() === '') {
+    setSoluong(''); 
     return;
   }
 
+  const newValue = parseInt(text);
+  if (isNaN(newValue)) return;
+
   if (newValue > max) {
     Alert.alert('Thông báo', `Số lượng vượt quá tồn kho! (Tối đa: ${max})`);
-     setSoluong((prev) => ({
-      ...prev,
-      [productId]: max,
-    }));
+    setSoluong(max.toString());
   } else {
-    setSoluong((prev) => ({
-      ...prev,
-      [productId]: newValue,
-    }));
-}
+    setSoluong(text);
+  }
 };
 
+
   const handleOrderNow = () => {
+      const parsedSoluong = parseInt(soluong);
+
+  if (!parsedSoluong || parsedSoluong <= 0) {
+    Alert.alert('Lỗi', 'Vui lòng nhập số lượng hợp lệ (ít nhất 1)');
+    return;
+  }
+
+  if (parsedSoluong > parseInt(sanpham.soluong)) {
+    Alert.alert('Lỗi', 'Số lượng vượt quá tồn kho');
+    return;
+  }
     navigation.navigate('Đặt hàng', {
-      item: { ...sanpham, tongtien },
+      sp: {
+        ...sanpham,
+        soluong,
+        ten_san_pham: sanpham.ten,
+        anh_dai_dien: sanpham.anh_dai_dien || sanpham.hinhanh?.[0] || '',
+      },
     });
   };
+
 
   if (loading || !sanpham) {
     return (
@@ -117,7 +133,7 @@ const handleChangeSoluong = (text, productId, max) => {
           <Image key={index} source={{ uri }} style={styles.image} />
         ))}
       </ScrollView>
-<Text style={styles.swipeHint}>← Vuốt để xem thêm ảnh →</Text>
+      <Text style={styles.swipeHint}>← Vuốt để xem thêm ảnh →</Text>
       <Text style={styles.name}>{sanpham.ten}</Text>
       <Text style={styles.price}>{parseInt(sanpham.gia).toLocaleString()} đ</Text>
       <Text style={styles.desc}>{sanpham.mota || 'Không có mô tả.'}</Text>
@@ -127,14 +143,14 @@ const handleChangeSoluong = (text, productId, max) => {
         <TouchableOpacity onPress={handleDecrease}>
           <Ionicons name="remove-circle-outline" size={32} color="black" />
         </TouchableOpacity>
- <TextInput
-  style={styles.quantityInput}
-  keyboardType="numeric"
-  value={soluong.toString()}
-  onChangeText={(text) =>
-    handleChangeSoluong(text, sanpham.id, sanpham.soluong)
-  }
-/>
+        <TextInput
+          style={styles.quantityInput}
+          keyboardType="numeric"
+          value={soluong.toString()}
+          onChangeText={(text) => handleChangeSoluong(text, sanpham.soluong)}
+        />
+
+
 
         <TouchableOpacity onPress={handleIncrease}>
           <Ionicons name="add-circle-outline" size={32} color="black" />
@@ -142,9 +158,10 @@ const handleChangeSoluong = (text, productId, max) => {
       </View>
 
       <View style={styles.buttonGroup}>
-        <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
+        <TouchableOpacity style={styles.cartButton} onPress={() => handleAddToCart(sanpham)}>
           <Text style={styles.buttonText}>Thêm vào giỏ</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.orderButton} onPress={handleOrderNow}>
           <Text style={styles.buttonText}>Đặt hàng</Text>
         </TouchableOpacity>
@@ -222,15 +239,15 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   quantityInput: {
-  width: 60,
-  height: 40,
-  textAlign: 'center',
-  fontSize: 18,
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 8,
-  marginHorizontal: 10,
-},
+    width: 60,
+    height: 40,
+    textAlign: 'center',
+    fontSize: 18,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginHorizontal: 10,
+  },
 
 });
 

@@ -6,11 +6,12 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
-  StyleSheet,
   Modal,
   TextInput,
   Alert,
   ToastAndroid,
+  StyleSheet,
+  FlatList
 } from 'react-native';
 import { fetchSanPham } from '../service/api';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -21,7 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 const SanPhamTheoDanhMuc = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { danhmucId } = route.params;
+  const { danhMucId } = route.params;
   const { token } = useAuth();
   const { addToCart } = useCart();
 
@@ -33,16 +34,28 @@ const SanPhamTheoDanhMuc = () => {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    if (token && danhmucId) {
-      fetchSanPham(token)
+    if (token && danhMucId) {
+      console.log("Token:", token);
+      console.log("danhMucId:", danhMucId);
+
+      fetchSanPham(token, '')
         .then((data) => {
-          const filtered = data.filter(sp => sp.danhmuc_id === danhmucId);
+          // console.log("Tất cả sản phẩm từ API:", data);
+
+          const filtered = data.filter(sp => String(sp.danhmuc_id) === String(danhMucId));
+
           setSanPham(filtered);
         })
-        .catch((error) => console.error(error.message))
+        .catch((error) => {
+          console.error("Lỗi khi fetch:", error.message);
+        })
         .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-  }, [token, danhmucId]);
+  }, [token, danhMucId]);
+
+
 
   const handleIncrease = (productId, tonKho) => {
     setSoluongs((prev) => {
@@ -96,8 +109,8 @@ const SanPhamTheoDanhMuc = () => {
     setSelectedProductId(null);
   };
 
-  const handleOrderNow = (item) => {
-    navigation.navigate("Đặt hàng", { item });
+  const handleOrderNow = (sp) => {
+    navigation.navigate("Đặt hàng", { sp });
   };
 
   if (loading) {
@@ -114,30 +127,42 @@ const SanPhamTheoDanhMuc = () => {
 
   return (
     <>
-      <ScrollView style={styles.container}>
-        {sanPham.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.card}
-            onPress={() => navigation.navigate('Chi tiết sản phẩm', { sanpham: item })}
-          >
-            <Image source={{ uri: item.hinhanh }} style={styles.image} />
-            <View style={styles.info}>
-              <Text style={styles.name}>{item.ten}</Text>
-              <Text style={styles.price}>{item.gia.toLocaleString()}₫</Text>
-              <Text style={styles.quantityInput}>Tồn kho: {item.soluong}</Text>
+<FlatList
+  data={sanPham}
+  keyExtractor={(item) => item?.id?.toString()}
+  contentContainerStyle={styles.container}
+  renderItem={({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('Chi tiết sản phẩm', { sanpham: item })}
+    >
+      <Image source={{ uri: item.hinhanh }} style={styles.image} />
+      <View style={styles.info}>
+        <Text style={styles.name}>{item.ten_san_pham}</Text>
+        <Text style={styles.price}>{item.gia.toLocaleString()}₫</Text>
+        <Text style={styles.quantityInput}>Tồn kho: {item.soluong}</Text>
 
-              <TouchableOpacity style={styles.cartButton} onPress={() => handleAddToCart(item)}>
-                <Text style={styles.buttonText}>Thêm</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(item)}>
-                <Text style={styles.buttonText}>Mua</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity style={styles.cartButton} onPress={() => handleAddToCart(item)}>
+            <Text style={styles.buttonText}>Thêm</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+
+          <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(item)}>
+            <Text style={styles.buttonText}>Mua</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.detailButton}
+            onPress={() => navigation.navigate("Chi tiết sản phẩm", { item })}
+          >
+            <Text style={styles.detailText}>Chi tiết</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  )}
+/>
+
 
       <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
         <View style={styles.overlay}>
@@ -195,3 +220,156 @@ const SanPhamTheoDanhMuc = () => {
 };
 
 export default SanPhamTheoDanhMuc;
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 10,
+    backgroundColor: '#F5F7FA',
+    flex: 1,
+  },
+  card: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginRight: 12,
+    resizeMode: 'cover',
+  },
+  info: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  name: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  price: {
+    fontSize: 15,
+    color: '#E53935',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  quantityInput: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
+  },
+ buttonGroup: {
+  flexDirection: 'row',
+  gap: 8, // nếu dùng React Native >= 0.71
+  marginTop: 8,
+  flexWrap: 'wrap', // giúp co lại nếu không đủ chỗ
+},
+buttonGroup: {
+  flexDirection: 'row',
+  marginTop: 8,
+  flexWrap: 'wrap',
+},
+cartButton: {
+  backgroundColor: '#43A047',
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  borderRadius: 6,
+  marginRight: 8,
+  marginBottom: 6,
+  alignSelf: 'flex-start',
+  minWidth: 90,
+},
+
+orderButton: {
+  backgroundColor: '#1E88E5',
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  borderRadius: 6,
+  marginRight: 8,
+  marginBottom: 6,
+  alignSelf: 'flex-start',
+  minWidth: 90,
+},
+
+detailButton: {
+  borderColor: '#1E88E5',
+  borderWidth: 1,
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  borderRadius: 6,
+  marginBottom: 6,
+  alignSelf: 'flex-start',
+  minWidth: 90,
+},
+
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 24,
+    width: '90%',
+    borderRadius: 12,
+    elevation: 6,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 14,
+    textAlign: 'center',
+    color: '#333',
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 6,
+    textAlign: 'center',
+    color: '#444',
+  },
+  productPrice: {
+    fontSize: 14,
+    color: '#777',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  quantityInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginHorizontal: 10,
+    minWidth: 60,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  confirmButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+});

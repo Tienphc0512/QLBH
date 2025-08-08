@@ -8,12 +8,16 @@ import {
 } from 'react-native';
 import { fetchNotifications } from '../service/api';
 import { useAuth } from '../context/Auth';
+import { useNavigation } from '@react-navigation/native';
+
 
 export default function ThongBao() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { token } = useAuth();
+  const navigation = useNavigation();
+
 
   useEffect(() => {
     async function loadData() {
@@ -63,11 +67,27 @@ export default function ThongBao() {
         keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <Text style={styles.title}>{item.title || 'Không có tiêu đề'}</Text>
-            <Text>{item.content || ''}</Text>
+            {/* <Text style={styles.title}>{item.noidung || 'Không có tiêu đề'}</Text> */}
+            <Text>{item.noidung || ''}</Text>
+            {/* Hiển thị ngày giờ */}
             <Text style={styles.date}>
-              {item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}
+              {item.created_at
+                ? new Date(item.created_at).toLocaleString('vi-VN')
+                : ''}
             </Text>
+            <Text
+              style={styles.linkText}
+              onPress={() => {
+                if (item.noidung?.toLowerCase().includes('hủy') || item.noidung?.toLowerCase().includes('huỷ')) {
+                  navigation.navigate('Lịch sử hủy', { dathangId: item.dathang_id });
+                } else {
+                  navigation.navigate('Theo dõi đơn', { dathangId: item.dathang_id });
+                }
+              }}
+            >
+              Xem chi tiết
+            </Text>
+
           </View>
         )}
       />
@@ -116,4 +136,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  linkText: {
+    marginTop: 6,
+    color: '#007AFF',
+    fontSize: 13,
+    textDecorationLine: 'underline',
+    alignSelf: 'flex-start',
+  },
+
 });

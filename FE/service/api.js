@@ -1,6 +1,8 @@
 import axios from 'axios'; 
 
-const BASE_URL = "http://192.168.100.7:3000"; // IP của máy Windows trong mạng Wi-Fi
+
+const BASE_URL = "http://192.168.100.8:3000"; // IP của máy Windows trong mạng Wi-Fi
+
 // const BASE_URL = "http://10.0.2.2:3000"; //ip net
 
 //api đăng nhập
@@ -69,7 +71,6 @@ export async function fetchTaiKhoan(token) {
 }
 
 //thêm api xem địa chỉ 
-
 export async function addDiaChi({ diachi, macdinh }, token) {
   try {
     const response = await axios.post(`${BASE_URL}/api/diachi`, {
@@ -197,7 +198,7 @@ export async function fetchDanhMuc(name, token) {
 }
 
 // api xem sản phẩm (yêu cầu token)
-export async function fetchSanPham(name, token) {
+export async function fetchSanPham(token, name = '') {
   try {
     const response = await axios.get(`${BASE_URL}/api/sanpham`, {
       params: {
@@ -216,6 +217,7 @@ export async function fetchSanPham(name, token) {
     }
   }
 }
+
 
 // api xem chi tiết sản phẩm
 export async function fetchChiTietSanPham(sanphamId, token) {
@@ -292,15 +294,14 @@ export async function fetchOrderHistory(token) {
   }
 }
 
-//api dặt hàng
+//api đặt hàng
 export async function placeOrder(orderDetails, token) { 
   try {
     const response = await axios.post(`${BASE_URL}/api/dat_hang`, orderDetails, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ products }), // cấu trúc gửi về server
+      }
     });
     return response.data;
   } catch (error) {
@@ -312,28 +313,51 @@ export async function placeOrder(orderDetails, token) {
   }
 }
 
+
 // api xem chitiet đặt hàng
 export async function fetchOrderDetails(orderId, token) {
   try {
     const response = await axios.get(`${BASE_URL}/api/chi_tiet_don_hang/${orderId}`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
     });
-    return response.data;
+
+    return response.data; 
   } catch (error) {
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.error || 'Lấy chi tiết đặt hàng thất bại');
-    } else {
-      throw new Error('Không thể kết nối đến máy chủ');
+    // Nếu token hết hạn hoặc không hợp lệ
+    if (error.response?.status === 401) {
+      throw new Error('Phiên đã hết hạn, vui lòng đăng nhập lại');
     }
+
+    throw error; // Ném lỗi khác nếu không phải 401
   }
 }
+
+//api xem lịch sử đã hủy đơn hàng 
+export const fetchCancelDetailsHis = async (token) => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/lich_su_huy_don_hang`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi khi lấy lịch sử hủy đơn hàng:', error);
+    throw error.response?.data || { error: 'Lỗi không xác định' };
+  }
+};
+
 
 // api xem thông báo
 export async function fetchNotifications(token) {
   try {
-    const response = await axios.get(`${BASE_URL}/api/thong_bao`, {
+    const response = await axios.get(`${BASE_URL}/api/thongbao`, {
       headers: {
         Authorization: `Bearer ${token}`
       } 
@@ -350,22 +374,22 @@ export async function fetchNotifications(token) {
 } 
 
 // api đánh dấu là đã đọc thông báo 
-export async function markNotificationAsRead(notificationId, token) {
-  try {
-    const response = await axios.put(`${BASE_URL}/api/thong_bao/${notificationId}/read`, {}, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return response.data;
-  } catch (error) {
-    if (error.response && error.response.data) {
-      throw new Error(error.response.data.error || 'Đánh dấu thông báo thất bại');
-    } else {
-      throw new Error('Không thể kết nối đến máy chủ');
-    }
-  }
-}
+// export async function markNotificationAsRead(notificationId, token) {
+//   try {
+//     const response = await axios.put(`${BASE_URL}/api/thongbao/${notificationId}/read`, {}, {
+//       headers: {
+//         Authorization: `Bearer ${token}`
+//       }
+//     });
+//     return response.data;
+//   } catch (error) {
+//     if (error.response && error.response.data) {
+//       throw new Error(error.response.data.error || 'Đánh dấu thông báo thất bại');
+//     } else {
+//       throw new Error('Không thể kết nối đến máy chủ');
+//     }
+//   }
+// }
 
 //api huỷ đơn hàng
 export async function cancelOrder(orderId, token) {
@@ -384,6 +408,7 @@ export async function cancelOrder(orderId, token) {
     }
   }
 }
+
 // aoi xem lịch sử tìm kiếm = ai
 export async function fetchChatHistoryAI(token) {
   try {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { fetchDiaChi, updateDiaChi, deleteDiaChi, addDiaChi } from '../service/api';
-import { useAuth } from '../context/Auth';
+import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ToastAndroid } from 'react-native';
+import { fetchDiaChi, updateDiaChi, deleteDiaChi, addDiaChi } from '../../service/api';
+import { useAuth } from '../../context/Auth';
 
 export default function DiaChiModal({ visible, onClose }) {
   const { token } = useAuth();
@@ -15,7 +15,7 @@ export default function DiaChiModal({ visible, onClose }) {
     setLoading(true);
     try {
       const data = await fetchDiaChi(token);
-          console.log('Dữ liệu địa chỉ:', data); // ✅ thêm dòng này
+          // console.log('Dữ liệu địa chỉ:', data); 
 
       setList(data);
     } catch (err) {
@@ -30,10 +30,11 @@ export default function DiaChiModal({ visible, onClose }) {
 
   const handleUpdate = async (index) => {
     try {
-      await updateDiaChi(list[index]._id, {
+      await updateDiaChi(list[index].id, {
         diachi: list[index].diachi,
         macdinh: list[index].macdinh
       }, token);
+      ToastAndroid.show('Cập nhật địa chỉ thành công', ToastAndroid.SHORT);
       setEditIndex(null);
       loadDiaChi();
     } catch (err) {
@@ -45,31 +46,20 @@ export default function DiaChiModal({ visible, onClose }) {
     try {
       await deleteDiaChi(id, token);
       loadDiaChi();
+      ToastAndroid.show('Xóa địa chỉ thành công', ToastAndroid.SHORT);
     } catch (err) {
       alert(err.message);
     }
   };
 
-  const handleAdd = async () => {
+const handleAdd = async () => {
   if (!newDiaChi.trim()) return alert('Vui lòng nhập địa chỉ');
 
   try {
-    const response = await fetch('', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ diachi: newDiaChi, macdinh: false }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Thêm địa chỉ thất bại');
-    }
-
+    await addDiaChi({ diachi: newDiaChi, macdinh: false }, token);
     setNewDiaChi('');
     loadDiaChi();
+    ToastAndroid.show('Thêm địa chỉ thành công', ToastAndroid.SHORT);
   } catch (err) {
     alert(err.message);
   }
@@ -106,7 +96,7 @@ export default function DiaChiModal({ visible, onClose }) {
         <ScrollView>
           {loading ? <Text>Đang tải...</Text> :
             list.map((item, index) => (
-              <View key={item._id} style={styles.item}>
+              <View key={item._id || index.toString()} style={styles.item}>
                 {editIndex === index ? (
                   <>
                     <TextInput
@@ -114,11 +104,21 @@ export default function DiaChiModal({ visible, onClose }) {
                       onChangeText={(text) => handleInputChange(index, 'diachi', text)}
                       style={styles.input}
                     />
-                    <TextInput
-                      value={item.macdinh ? '1' : '0'}
-                      onChangeText={(text) => handleInputChange(index, 'macdinh', text === '1')}
-                      style={styles.input}
-                    />
+                   <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+  <TouchableOpacity
+    style={[styles.radioOption, item.macdinh && styles.radioSelected]}
+    onPress={() => handleInputChange(index, 'macdinh', true)}
+  >
+    <Text style={styles.radioText}>Địa chỉ chính</Text>
+  </TouchableOpacity>
+  <TouchableOpacity
+    style={[styles.radioOption, !item.macdinh && styles.radioSelected]}
+    onPress={() => handleInputChange(index, 'macdinh', false)}
+  >
+    <Text style={styles.radioText}>Địa chỉ phụ</Text>
+  </TouchableOpacity>
+</View>
+
                     <TouchableOpacity onPress={() => handleUpdate(index)} style={styles.saveBtn}>
                       <Text style={styles.btnText}>Lưu</Text>
                     </TouchableOpacity>
@@ -126,12 +126,16 @@ export default function DiaChiModal({ visible, onClose }) {
                 ) : (
                   <>
                     <Text style={styles.text}>Địa chỉ: {item.diachi}</Text>
-                    <Text style={styles.text}>Mặc định: {item.macdinh ? '✅' : '❌'}</Text>
+                    <Text style={styles.text}>
+  Loại địa chỉ: {item.macdinh ? 'Chính' : 'Phụ'}
+</Text>
+
+
                     <View style={styles.buttonRow}>
                       <TouchableOpacity onPress={() => setEditIndex(index)} style={styles.editBtn}>
                         <Text style={styles.btnText}>Sửa</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDelete(item._id)} style={styles.deleteBtn}>
+                      <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteBtn}>
                         <Text style={styles.btnText}>Xóa</Text>
                       </TouchableOpacity>
                     </View>
@@ -160,5 +164,25 @@ const styles = StyleSheet.create({
   deleteBtn: { backgroundColor: '#dc3545', padding: 8, borderRadius: 5 },
   saveBtn: { backgroundColor: '#28a745', padding: 8, borderRadius: 5, marginTop: 5 },
   closeBtn: { backgroundColor: '#6c757d', padding: 12, borderRadius: 5, marginTop: 16, alignItems: 'center' },
-  btnText: { color: '#fff', fontWeight: 'bold' }
+  btnText: { color: '#fff', fontWeight: 'bold' },
+  //địa chỉ thêm 
+  radioOption: {
+  flex: 1,
+  padding: 10,
+  marginHorizontal: 5,
+  backgroundColor: '#eee',
+  borderRadius: 5,
+  alignItems: 'center',
+  borderWidth: 1,
+  borderColor: '#ccc',
+},
+radioSelected: {
+  backgroundColor: '#007bff',
+  borderColor: '#007bff',
+},
+radioText: {
+  color: '#000',
+  fontWeight: 'bold',
+},
+
 });

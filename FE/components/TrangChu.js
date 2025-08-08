@@ -10,6 +10,7 @@ import {
   TextInput,
   ToastAndroid,
   Alert,
+  RefreshControl 
 } from 'react-native';
 import { fetchDanhMuc, fetchSanPham } from '../service/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -29,24 +30,28 @@ const [showModal, setShowModal] = useState(false);
 const [selectedProduct, setSelectedProduct] = useState(null);
 const [selectedProductId, setSelectedProductId] = useState(null);
 
+const [refreshing, setRefreshing] = useState(false);
 
+ const fetchData = async () => {
+   setRefreshing(true);
+  try {
+    const danhmucRes = await fetchDanhMuc('', token);
+    setDanhmuc(danhmucRes);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const danhmucRes = await fetchDanhMuc('', token);
-        setDanhmuc(danhmucRes);
+    const sanphamRes = await fetchSanPham(token, '');
+    setSanpham(sanphamRes);
+    
+  } catch (err) {
+    console.error('Lỗi khi load dữ liệu:', err.response?.data || err.message);
+  }
+  setRefreshing(false);
+};
 
-        const sanphamRes = await fetchSanPham('', token);
-        console.log('API trả về:', sanphamRes);
-        setSanpham(sanphamRes);
-        // setFilteredSanPham(sanphamRes);
-      } catch (err) {
-        console.error('Lỗi khi load dữ liệu:', err.response?.data || err.message);
-      }
-    };
-    if (token) fetchData(); // đảm bảo token có rồi mới gọi
-  }, [token]); // depend on token để re-run khi token sẵn sàng
+useEffect(() => {
+  if (token) {
+    fetchData();
+  }
+}, [token]);
 
 
 // hàm xử lý khi user tăng số lượng sp
@@ -78,7 +83,7 @@ const handleConfirmAddToCart = (sp) => {
     ToastAndroid.show("Số lượng vượt quá tồn kho!", ToastAndroid.SHORT);
     return;
   }
-console.log('Add to cart:', sp);
+// console.log('Add to cart:', sp);
   addToCart({ ...sp, soluong: sl });
   ToastAndroid.show(`${sp.ten_san_pham} đã được thêm vào giỏ`, ToastAndroid.SHORT);
   setSelectedProductId(null); // ẩn lại khung nhập sau khi thêm
@@ -93,6 +98,7 @@ const handleAddToCart = (item) => {
     [item.id]: prev[item.id] || 1,
   }));
 };
+
 
 // hàm xử lý số lượng khi nhập tay 
 const handleChangeSoluong = (text, productId, max) => {
@@ -120,40 +126,17 @@ const handleChangeSoluong = (text, productId, max) => {
   }
 };
 
-
-  // const handleOrderNow = (item) => {
-  //   navigation.navigate("Đặt hàng", { item, soluong: soluongs[item.id] || 1 });
-  // };
-
 const handleSelectDanhMuc = (selectedDanhMuc) => {
-  navigation.navigate('Danh mục sản phẩm', { danhMucId: selectedDanhMuc.id });
+  navigation.navigate('Danh mục sản phẩm', { danhMucId: selectedDanhMuc.id, ten: selectedDanhMuc.ten});
 };
 
 // điều hướng qua đặt hàng với item và số lượng đã chọn
-const handleOrderNow = (item) => {
-  const sl = parseInt(soluongs?.[item.id]);
-
-  const validQty =
-    !isNaN(sl) && sl > 0
-      ? sl
-      : parseInt(item.soluong) > 0
-      ? 1
-      : 0;
-
-  if (validQty <= 0) {
-    Alert.alert("Lỗi", "Sản phẩm không khả dụng để mua.");
-    return;
-  }
-
+const handleOrderNow = (sp) => {
+  // điều hướng qua màn hình Đặt hàng với sản phẩm đã chọn
   navigation.navigate("Đặt hàng", {
-    item: {
-      ...item,
-      soluong: validQty,
-    },
+    sp: sp, // giữ nguyên sản phẩm, không chỉnh sửa 'soluong'
   });
 };
-
-
 
 
 
@@ -193,21 +176,25 @@ const handleOrderNow = (item) => {
   style={styles.categoryButton}
   onPress={() => handleSelectDanhMuc(item)}
 >
-  <Text style={styles.categoryText}>{item.ten_san_pham}</Text>
+  <Text style={styles.categoryText}>{item.ten}</Text>
 </TouchableOpacity>
 
         )}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingRight: 10 }}
-      />
+       showsHorizontalScrollIndicator={false}
+  contentContainerStyle={{ paddingRight: 10, paddingBottom: 15 }} // thêm paddingBottom ở đây
+  style={{ marginBottom: 15 }} // hoặc thêm marginBottom ở đây để tách hẳn FlatList danh mục và sản phẩm
+/>
 
       {/* SẢN PHẨM - lưới 3 cột, lướt dọc */}
-      <Text style={styles.heading}>Sản phẩm nổi bật</Text>
+      <Text style={[styles.heading, { marginTop: 20 }]}>Sản phẩm</Text>
 <FlatList
   data={sanpham}
   keyExtractor={(item) => item.id.toString()}
   numColumns={2}
   columnWrapperStyle={{ justifyContent: 'space-between' }}
+   refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={fetchData} />
+      }
   renderItem={({ item: sp }) => (
     <View style={styles.productCard}>
       <Image
@@ -215,7 +202,7 @@ const handleOrderNow = (item) => {
         style={styles.productImage}
       />
       <Text style={styles.productName} numberOfLines={2}>{sp.ten_san_pham}</Text>
-      <Text style={styles.productPrice}>{sp.gia.toLocaleString()}₫</Text>
+      <Text style={styles.productPrice}>{parseInt(sp.gia).toLocaleString()}₫</Text>
       <Text style={styles.quantityInput}>Tồn kho: {sp.soluong}</Text>
      
       <View style={styles.buttonGroup}>
@@ -223,7 +210,7 @@ const handleOrderNow = (item) => {
   <Text style={styles.buttonText}>Thêm</Text>
 </TouchableOpacity>
 
-        <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(item)}>
+        <TouchableOpacity style={styles.orderButton} onPress={() => handleOrderNow(sp)}>
   <Text style={styles.buttonText}>Mua</Text>
 </TouchableOpacity>
 
@@ -339,16 +326,22 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   categoryButton: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 10,
-  },
-  categoryText: {
-    fontSize: 15,
-    color: '#333',
-  },
+  backgroundColor: '#e0e0e0',
+  borderRadius: 16,
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  marginRight: 12,
+  minWidth: 100,          // thêm minWidth để nút đủ rộng chứa chữ
+  minHeight: 45,          // chiều cao ổn định
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+categoryText: {
+  fontSize: 16,
+  color: '#333',
+  fontWeight: '600',
+  textAlign: 'center',
+},
  productsWrapper: {
   paddingBottom: 20,
   paddingHorizontal: 5,
@@ -359,7 +352,7 @@ productCard: {
   backgroundColor: '#fff',
   borderRadius: 10,
   padding: 10,
-  marginBottom: 15,
+  marginBottom: 39,
   elevation: 3,
   shadowColor: '#000',
   shadowOpacity: 0.1,

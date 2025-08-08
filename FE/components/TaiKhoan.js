@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, Text, Button, ActivityIndicator, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { fetchTaiKhoan, updateTaiKhoan } from '../service/api';
 import { useAuth } from '../context/Auth';
-import DiaChiModal from './DiaChiModal';
+import DiaChiModal from './Modal/DiaChiModal';
 import { useFocusEffect } from '@react-navigation/native';
 
 const TaiKhoan = () => {
@@ -18,23 +18,6 @@ const TaiKhoan = () => {
     const [updating, setUpdating] = useState(false);
     const { logout, token } = useAuth();
     const [showDiaChiModal, setShowDiaChiModal] = useState(false);
-
-
-
-    // useEffect(() => {
-        
-    //     const getTaiKhoan = async () => {
-    //         setLoading(true);
-    //         try {
-    //             const data = await fetchTaiKhoan(token);
-    //             setFormData(data);
-    //         } catch (err) {
-    //             Alert.alert('Lỗi', err.message);
-    //         }
-    //         setLoading(false);
-    //     };
-    //     getTaiKhoan();
-    // }, [token]);
 
     useFocusEffect(
   React.useCallback(() => {
