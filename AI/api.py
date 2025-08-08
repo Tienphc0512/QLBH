@@ -1,24 +1,23 @@
+
+# import os
 # from flask import Flask, request, jsonify
-# from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel
 # import torch
 # import psycopg2
 # from psycopg2.extras import RealDictCursor
 # import numpy as np
-# from huggingface_hub import login
-# import os
+# from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
 # from dotenv import load_dotenv
+# from flask import Response
+# import json
+# import ast
+# # Load biến môi trường
 # load_dotenv()
-
-# # ---- Đăng nhập HuggingFace nếu có token (nếu cần model từ private repo) ----
-# token = os.getenv("HF_TOKEN")
-# if token:
-#     login(token=token)
 
 # app = Flask(__name__)
 
 # # --- Kết nối DB ---
 # DB_CONFIG = {
-#     "host": "172.23.46.76",
+#     "host": "172.23.171.186",
 #     "database": "ttnt",
 #     "user": "postgres",
 #     "password": "051203",
@@ -27,52 +26,63 @@
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# # --- Load mô hình hội thoại ---
-# chat_tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-small")
-# chat_model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-small").to(device)
-# chat_model.eval()
-
-# # --- Load mô hình embedding ---
+# # --- Load model embedding local ---
 # embedding_tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-small")
-# embedding_model = AutoModel.from_pretrained("thenlper/gte-small")
+# embedding_model = AutoModel.from_pretrained("thenlper/gte-small").to(device)
 
+# # --- Load model chat local ---
+# chat_model_name = "microsoft/DialoGPT-small"
+# chat_tokenizer = AutoTokenizer.from_pretrained(chat_model_name)
+# chat_model = AutoModelForCausalLM.from_pretrained(chat_model_name).to(device)
+# chat_model.eval()
 
 # # --- Hàm tạo embedding ---
 # def get_embedding(text):
-#     inputs = embedding_tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+#     inputs = embedding_tokenizer(text, return_tensors="pt", padding=True, truncation=True).to(device)
 #     with torch.no_grad():
 #         model_output = embedding_model(**inputs)
 #     embeddings = model_output.last_hidden_state.mean(dim=1)
 #     return embeddings[0].tolist()
 
-# # --- Hàm tính độ tương đồng ---
+# # --- Hàm tính cosine similarity ---
 # def cosine_similarity(vec1, vec2):
 #     v1 = np.array(vec1)
 #     v2 = np.array(vec2)
 #     return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
 
 # # --- Tìm FAQ tương tự ---
+# import numpy as np
+# import ast  # để chuyển string "[...]" thành list
+
 # def find_similar_faq(user_embedding):
-#     conn = psycopg2.connect(**DB_CONFIG)
-#     cur = conn.cursor(cursor_factory=RealDictCursor)
-#     cur.execute("SELECT id, question, answer, embedding FROM faq WHERE embedding IS NOT NULL")
+#     conn = psycopg2.connect(...)
+#     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+#     cur.execute("SELECT id, question, answer, embedding FROM faq")
 #     faqs = cur.fetchall()
 #     cur.close()
 #     conn.close()
+
+#     print(f"[DEBUG] user_embedding length: {len(user_embedding)}")
 
 #     best_score = -1
 #     best_faq = None
 
 #     for faq in faqs:
-#         try:
-#             score = cosine_similarity(user_embedding, faq["embedding"])
-#             if score > best_score:
-#                 best_score = score
-#                 best_faq = faq
-#         except Exception:
-#             continue
+#         emb = faq["embedding"]
+#         if isinstance(emb, str):
+#             emb = np.array(ast.literal_eval(emb), dtype=np.float32)  # string → list → numpy array
+#         else:
+#             emb = np.array(emb, dtype=np.float32)
 
-#     return best_faq if best_score >= 0.7 else None
+#         score = cosine_similarity(user_embedding, emb)
+#         print(f"[DEBUG] Compare with '{faq['question']}' → score = {score}")
+
+#         if score > best_score:
+#             best_score = score
+#             best_faq = faq
+
+#     return best_faq if best_score >= 0.5 else None
+
 
 # # --- Lưu lịch sử tìm kiếm ---
 # def save_search_history(user_id, question, matched_faq_id, response):
@@ -86,29 +96,16 @@
 #     cur.close()
 #     conn.close()
 
-# # --- Sinh phản hồi từ mô hình hội thoại ---
-# def generate_response(prompt):
-#     input_ids = chat_tokenizer.encode(prompt + chat_tokenizer.eos_token, return_tensors="pt").to(chat_model.device)
-
+# # --- Hàm sinh phản hồi từ model local ---
+# def generate_local_response(prompt):
+#     inputs = chat_tokenizer(prompt, return_tensors="pt").to(device)
 #     with torch.no_grad():
-#         output_ids = chat_model.generate(
-#             input_ids,
-#             max_length=1000,
-#             pad_token_id=chat_tokenizer.eos_token_id,
-#             do_sample=True,
-#             top_k=50,
-#             top_p=0.95,
-#             temperature=0.7,
+#         outputs = chat_model.generate(
+#             **inputs,
+#             max_length=200,
+#             pad_token_id=chat_tokenizer.eos_token_id
 #         )
-
-#     response = chat_tokenizer.decode(output_ids[:, input_ids.shape[-1]:][0], skip_special_tokens=True)
-#     return response.strip()
-
-# # --- API tạo embedding ---
-# @app.route("/embed", methods=["POST"])
-# def embed():
-#     text = request.json.get("text", "")
-#     return jsonify({"embedding": get_embedding(text)})
+#     return chat_tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # # --- API chat ---
 # @app.route("/chat", methods=["POST"])
@@ -125,12 +122,21 @@
 #         context = "Không có câu hỏi tương tự trong cơ sở dữ liệu."
 
 #     final_prompt = f"{context}\n\n{prompt}"
-#     response = generate_response(final_prompt)
+#     response = generate_local_response(final_prompt)
 
 #     if user_id:
 #         save_search_history(user_id, prompt, matched_faq['id'] if matched_faq else None, response)
 
-#     return jsonify({"response": response})
+#     return Response(
+#     json.dumps({"response": response}, ensure_ascii=False),
+#     content_type="application/json; charset=utf-8"
+# )
+
+# # --- API tạo embedding ---
+# @app.route("/embed", methods=["POST"])
+# def embed():
+#     text = request.json.get("text", "")
+#     return jsonify({"embedding": get_embedding(text)})
 
 # # --- API thêm câu hỏi FAQ ---
 # @app.route("/add_faq", methods=["POST"])
@@ -156,43 +162,55 @@
 
 #     return jsonify({"message": "Đã thêm FAQ thành công"})
 
+
 # if __name__ == "__main__":
 #     app.run(debug=True, port=5000)
-
 import os
-from flask import Flask, request, jsonify
-import requests
+import json
+import ast
+import numpy as np
 import torch
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import numpy as np
-from transformers import AutoTokenizer, AutoModel
-from dotenv import load_dotenv
+from flask import Flask, request, jsonify, Response
+from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
+from dotenv import load_dotenv, dotenv_values
+# config = dotenv_values("D:/QLBH/AI/.env")
+# print(config)
 
-# Load biến môi trường
-load_dotenv()
-HF_TOKEN = os.getenv("HF_TOKEN")
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 
 app = Flask(__name__)
 
-# --- Kết nối DB ---
+# --- DB config (đọc từ .env, mặc định an toàn nếu thiếu) ---
 DB_CONFIG = {
-    "host": "172.23.46.76",
-    "database": "ttnt",
-    "user": "postgres",
-    "password": "051203",
-    "port": 5432
+    "host": os.getenv("DB_HOST", "localhost"),
+    "database": os.getenv("DB_NAME", "ttnt"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "port": int(os.getenv("DB_PORT", 5432))
 }
 
+def get_db_conn():
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        return conn
+    except Exception as e:
+        # log rõ lỗi để dev biết (Flask console)
+        print("ERROR: cannot connect to DB:", e)
+        raise
+
+# --- rest of your model & functions unchanged ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# --- Load model embedding local ---
 embedding_tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-small")
 embedding_model = AutoModel.from_pretrained("thenlper/gte-small").to(device)
 
-model_name = "gpt2"  # hoặc "tiiuae/falcon-7b-instruct", "facebook/blenderbot-400M-distill", "bigscience/bloomz-560m"
+chat_model_name = "microsoft/DialoGPT-small"
+chat_tokenizer = AutoTokenizer.from_pretrained(chat_model_name)
+chat_model = AutoModelForCausalLM.from_pretrained(chat_model_name).to(device)
+chat_model.eval()
 
-# --- Hàm tạo embedding ---
 def get_embedding(text):
     inputs = embedding_tokenizer(text, return_tensors="pt", padding=True, truncation=True).to(device)
     with torch.no_grad():
@@ -200,17 +218,20 @@ def get_embedding(text):
     embeddings = model_output.last_hidden_state.mean(dim=1)
     return embeddings[0].tolist()
 
-# --- Hàm tính cosine similarity ---
 def cosine_similarity(vec1, vec2):
-    v1 = np.array(vec1)
-    v2 = np.array(vec2)
-    return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+    v1 = np.array(vec1, dtype=np.float32)
+    v2 = np.array(vec2, dtype=np.float32)
+    return float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
-# --- Tìm FAQ tương tự ---
 def find_similar_faq(user_embedding):
-    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        conn = get_db_conn()
+    except Exception:
+        # nếu không kết nối đc thì trả None (để API vẫn chạy)
+        return None
+
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT id, question, answer, embedding FROM faq WHERE embedding IS NOT NULL")
+    cur.execute("SELECT id, question, answer, embedding FROM faq")
     faqs = cur.fetchall()
     cur.close()
     conn.close()
@@ -219,19 +240,27 @@ def find_similar_faq(user_embedding):
     best_faq = None
 
     for faq in faqs:
+        emb = faq["embedding"]
+        if isinstance(emb, str):
+            emb = np.array(ast.literal_eval(emb), dtype=np.float32)
+        else:
+            emb = np.array(emb, dtype=np.float32)
+
         try:
-            score = cosine_similarity(user_embedding, faq["embedding"])
-            if score > best_score:
-                best_score = score
-                best_faq = faq
-        except Exception:
+            score = cosine_similarity(user_embedding, emb)
+        except Exception as e:
+            print("DEBUG: cosine error:", e)
             continue
 
-    return best_faq if best_score >= 0.7 else None
+        print(f"[DEBUG] Compare with '{faq['question']}' → score = {score}")
+        if score > best_score:
+            best_score = score
+            best_faq = faq
 
-# --- Lưu lịch sử tìm kiếm ---
+    return best_faq if best_score >= 0.5 else None
+
 def save_search_history(user_id, question, matched_faq_id, response):
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_conn()
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO lichsutimkiemai (user_id, question, matched_faq_id, response)
@@ -241,21 +270,11 @@ def save_search_history(user_id, question, matched_faq_id, response):
     cur.close()
     conn.close()
 
-# --- Gọi Hugging Face API ---
-def call_huggingface_api(model_name, prompt):
-    API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-    payload = {
-        "inputs": prompt,
-        "parameters": {"max_length": 200}
-    }
-    response = requests.post(API_URL, headers=headers, json=payload)
-    data = response.json()
-
-    if isinstance(data, list) and len(data) > 0 and "generated_text" in data[0]:
-        return data[0]["generated_text"]
-    else:
-        return str(data)
+def generate_local_response(prompt):
+    inputs = chat_tokenizer(prompt, return_tensors="pt").to(device)
+    with torch.no_grad():
+        outputs = chat_model.generate(**inputs, max_length=200, pad_token_id=chat_tokenizer.eos_token_id)
+    return chat_tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # --- API chat ---
 @app.route("/chat", methods=["POST"])
@@ -272,15 +291,15 @@ def chat():
         context = "Không có câu hỏi tương tự trong cơ sở dữ liệu."
 
     final_prompt = f"{context}\n\n{prompt}"
-
-    # ⚡ Đổi model_name ở đây để test các model khác nhau
-    model_name = "gpt2"
-    response = call_huggingface_api(model_name, final_prompt)
+    response = generate_local_response(final_prompt)
 
     if user_id:
         save_search_history(user_id, prompt, matched_faq['id'] if matched_faq else None, response)
 
-    return jsonify({"response": response})
+    return Response(
+        json.dumps({"response": response}, ensure_ascii=False),
+        content_type="application/json; charset=utf-8"
+    )
 
 # --- API tạo embedding ---
 @app.route("/embed", methods=["POST"])
@@ -296,7 +315,10 @@ def add_faq():
     answer = data.get("answer")
 
     if not question or not answer:
-        return jsonify({"error": "Thiếu dữ liệu"}), 400
+        return Response(
+            json.dumps({"error": "Thiếu dữ liệu"}, ensure_ascii=False),
+            content_type="application/json; charset=utf-8"
+        ), 400
 
     embedding = get_embedding(question)
 
@@ -304,13 +326,16 @@ def add_faq():
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO faq (question, answer, embedding) VALUES (%s, %s, %s)",
-        (question, answer, embedding)
+        (question, answer, json.dumps(embedding))
     )
     conn.commit()
     cur.close()
     conn.close()
 
-    return jsonify({"message": "Đã thêm FAQ thành công"})
+    return Response(
+        json.dumps({"message": "Đã thêm FAQ thành công"}, ensure_ascii=False),
+        content_type="application/json; charset=utf-8"
+    )
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
