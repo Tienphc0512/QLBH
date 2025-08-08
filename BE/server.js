@@ -18,8 +18,8 @@ app.use(bodyParser.json());
 // PostgreSQL Pool
 const pool = new Pool({
   user: "postgres",
-  // host: "172.23.45.157",  // hoặc 127.0.0.1
-  host: "localhost", // nếu chạy trên máy local thì dùng localhost
+  host: "172.23.171.186",  // ip của wsl (ubuntu)
+  // host: "localhost", // nếu chạy trên máy local thì dùng localhost
   database: "ttnt",
   password: "051203",
   port: 5432,
