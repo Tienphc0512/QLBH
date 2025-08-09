@@ -7,7 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  ToastAndroid
+  ToastAndroid,
+  RefreshControl
 } from "react-native";
 import { useCart } from "../../context/CartContext";
 import { removeFromCart as removeFromCartAPI} from "../../service/api";
@@ -16,14 +17,25 @@ import { useNavigation } from "@react-navigation/native";
 import Checkbox from "expo-checkbox";
 
 const GioHang = () => {
-  const { cartItems, removeFromCart } = useCart();
+  const { cartItems, removeFromCart, loadCartFromStorage  } = useCart();
   // const [loadingId, setLoadingId] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { token } = useAuth();
   const navigation = useNavigation();
 
+    // Hàm này chạy khi kéo xuống làm mới
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadCartFromStorage(); // gọi hàm load lại giỏ hàng từ storage
+    } catch (error) {
+      console.error("Lỗi khi refresh giỏ hàng:", error);
+    }
+    setRefreshing(false);
+  };
   const toggleSelect = (itemId) => {
     setSelectedItems((prev) =>
       prev.includes(itemId)
@@ -77,6 +89,9 @@ const handlePlaceOrder = async () => {
         keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
         ListHeaderComponent={
           <View style={styles.selectAllContainer}>
             <Checkbox

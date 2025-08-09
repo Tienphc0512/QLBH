@@ -56,11 +56,10 @@ def cosine_similarity(vec1, vec2):
     v2 = np.array(vec2, dtype=np.float32)
     return float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
-def find_similar_faq(user_embedding):
+def find_similar_faq(user_embedding, threshold=0.5):
     try:
         conn = get_db_conn()
     except Exception:
-        # nếu không kết nối đc thì trả None (để API vẫn chạy)
         return None
 
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -79,18 +78,13 @@ def find_similar_faq(user_embedding):
         else:
             emb = np.array(emb, dtype=np.float32)
 
-        try:
-            score = cosine_similarity(user_embedding, emb)
-        except Exception as e:
-            print("DEBUG: cosine error:", e)
-            continue
-
-        print(f"[DEBUG] Compare with '{faq['question']}' → score = {score}")
+        score = cosine_similarity(user_embedding, emb)
         if score > best_score:
             best_score = score
             best_faq = faq
 
-    return best_faq if best_score >= 0.5 else None
+    return best_faq if best_score >= threshold else None
+
 
 def save_search_history(user_id, question, matched_faq_id, response):
     conn = get_db_conn()
@@ -110,27 +104,36 @@ def generate_local_response(prompt):
     return chat_tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # --- API chat ---
+GREETINGS = ["hi", "hello", "xin chào", "chào", "hey", "ok", "oke", "okay", "cảm ơn", "thanks", "thank you"]
+
 @app.route("/chat", methods=["POST"])
 def chat():
-    prompt = request.json.get("prompt", "")
+    prompt = request.json.get("prompt", "").strip().lower()
     user_id = request.json.get("user_id", None)
 
-    user_embedding = get_embedding(prompt)
-    matched_faq = find_similar_faq(user_embedding)
-
-    if matched_faq:
-        context = f"Câu hỏi liên quan: {matched_faq['question']}\nTrả lời: {matched_faq['answer']}"
+    # Nếu là câu chào
+    if prompt in GREETINGS:
+        response_text = "Xin chào! Tôi có thể giúp gì cho bạn?"
     else:
-        context = "Không có câu hỏi tương tự trong cơ sở dữ liệu."
+        user_embedding = get_embedding(prompt)
+        matched_faq = find_similar_faq(user_embedding, threshold=0.75)  # tăng threshold
 
-    final_prompt = f"{context}\n\n{prompt}"
-    response = generate_local_response(final_prompt)
+        if matched_faq:
+            response_text = matched_faq['answer']
+        else:
+            response_text = "Xin lỗi, tôi chưa có thông tin cho câu hỏi này."
 
-    if user_id:
-        save_search_history(user_id, prompt, matched_faq['id'] if matched_faq else None, response)
+        # Lưu lịch sử
+        if user_id:
+            save_search_history(
+                user_id,
+                prompt,
+                matched_faq['id'] if matched_faq else None,
+                response_text
+            )
 
     return Response(
-        json.dumps({"response": response}, ensure_ascii=False),
+        json.dumps({"response": response_text}, ensure_ascii=False),
         content_type="application/json; charset=utf-8"
     )
 

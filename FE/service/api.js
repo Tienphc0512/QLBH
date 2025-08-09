@@ -1,9 +1,7 @@
 import axios from 'axios'; 
 
 
-const BASE_URL = "http://192.168.100.8:3000"; // IP của máy Windows trong mạng Wi-Fi
-
-// const BASE_URL = "http://10.0.2.2:3000"; //ip net
+const BASE_URL = "http://192.168.100.9:3000"; // IP của máy Windows trong mạng Wi-Fi
 
 //api đăng nhập
 export async function loginUser(username, password) {
@@ -279,7 +277,7 @@ export async function removeFromCart(itemId, token) {
 //xem lịch sử đặt hàng
 export async function fetchOrderHistory(token) {
   try {
-    const response = await axios.get(`${BASE_URL}/api//api/lich_su_dat_hang`, {
+    const response = await axios.get(`${BASE_URL}/api/lich_su_dat_hang`, {
       headers: {
         Authorization: `Bearer ${token}`
       }

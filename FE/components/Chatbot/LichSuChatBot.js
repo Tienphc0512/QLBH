@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { fetchChatHistoryAI } from '../../service/api'; 
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, SafeAreaView } from 'react-native';
+import { fetchChatHistoryAI } from '../../service/api';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, SafeAreaView, RefreshControl } from 'react-native';
 import { useAuth } from '../../context/Auth';
 
 export default function LichSuChatBot() {
@@ -8,20 +8,28 @@ export default function LichSuChatBot() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const { token } = useAuth();
+    const [refreshing, setRefreshing] = useState(false);
+
+
+    const loadHistory = async () => {
+        setRefreshing(true);
+        try {
+            const data = await fetchChatHistoryAI(token);
+            setHistory(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+        setRefreshing(false);
+    };
 
     useEffect(() => {
-        const loadHistory = async () => {
-            try {
-                const data = await fetchChatHistoryAI(token);
-                setHistory(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadHistory();
+        if (token) {
+            loadHistory();
+        }
     }, [token]);
+
 
     if (loading) {
         return (
@@ -62,6 +70,9 @@ export default function LichSuChatBot() {
                 keyExtractor={(item, index) => item.id?.toString() || index.toString()}
                 renderItem={renderItem}
                 contentContainerStyle={{ padding: 16 }}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={loadHistory} />
+                }
             />
         </SafeAreaView>
     );

@@ -653,7 +653,7 @@ app.get("/api/lich_su_dat_hang", verifyToken, async (req, res) => {
       `SELECT dh.*
        FROM dathang dh
        WHERE dh.user_id = $1
-       ORDER BY dh.ngay_dat DESC`,
+       ORDER BY dh.ngaydat DESC`,
       [userId]
     );
     res.json(result.rows);

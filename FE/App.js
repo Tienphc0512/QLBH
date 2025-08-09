@@ -9,6 +9,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import TrangChu from "./components/TrangChu";
 import GioHang from "./components/Order/GioHang";
 import TheodoiDH from "./components/Order/TheodoiDH";
+import CaiDat from "./components/CaiDat";
+
 import TaiKhoan from "./components/TaiKhoan";
 
 import DangNhap from "./components/DangNhap";
@@ -55,8 +57,7 @@ function MainTabs() {
           if (route.name === 'Trang chủ') iconName = 'home-outline';
           else if (route.name === 'Giỏ hàng') iconName = 'cart-outline';
           else if (route.name === 'Theo dõi đơn') iconName = 'receipt-outline';
-          // else if (route.name === 'Chatbot') iconName = 'chatbubbles-outline';
-          else if (route.name === 'Tài khoản') iconName = 'person-outline';
+         else if (route.name === 'Cài đặt') iconName = 'settings';
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -68,8 +69,7 @@ function MainTabs() {
       <Tab.Screen name="Trang chủ" component={TrangChu} />
       <Tab.Screen name="Giỏ hàng" component={GioHang} />
       <Tab.Screen name="Theo dõi đơn" component={TheodoiDH} />
-      {/* <Tab.Screen name="Chatbot" component={Chatbot} /> */}
-      <Tab.Screen name="Tài khoản" component={TaiKhoan} />
+      <Tab.Screen name="Cài đặt" component={CaiDat} />
     </Tab.Navigator>
   );
 }
@@ -120,13 +120,13 @@ function MainNavigator() {
           <Stack.Screen name="Thông báo" component={ThongBao} options={{ title: "Thông báo" }} />
           <Stack.Screen name="Chatbot" component={Chatbot} options={{ title: "Chat với AI" }} />
           <Stack.Screen name="Chi tiết sản phẩm" component={Chitietsanpham} options={{ title: "Chi tiết sản phẩm" }} />
-          {/* <Stack.Screen name="Sản phẩm" component={Sanpham} options={{ title: "Sản phẩm" }} /> */}
+          <Stack.Screen name="Tài khoản" component={TaiKhoan} options={{ title: "Thông tin tài khoản" }} />
           <Stack.Screen name="Danh mục sản phẩm" component={Danhmuc} options={({ route }) => ({
     title: route.params?.ten || 'Danh mục',
   })} />
-          <Stack.Screen name="Lịch sử hủy" component={LichsuHuy} options={{ title: "Đã hủy" }} />
+          <Stack.Screen name="Lịch sử hủy" component={LichsuHuy} options={{ title: "Các Đơn đã hủy" }} />
           <Stack.Screen name="Theo dõi đơn" component={TheodoiDH} options={{ title: "Theo dõi đơn" }} />
-
+          <Stack.Screen name="Lịch sử đặt hàng" component={LichSuDatHang} options={{ title: "Các đơn đã đặt" }} />
         </>
       ) : (
         <>

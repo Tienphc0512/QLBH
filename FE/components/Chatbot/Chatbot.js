@@ -38,10 +38,10 @@ const ChatBot = () => {
       };
 
       // Gửi embedding trước (nếu cần)
-      await axios.post("http://192.168.100.7:3000/api/embed", { text: input }, config);
+      await axios.post("http://192.168.100.9:3000/api/embed", { text: input }, config);
 
       // Gửi prompt
-      const res = await axios.post("http://192.168.100.7:3000/api/chat", { prompt: input }, config);
+      const res = await axios.post("http://192.168.100.9:3000/api/chat", { prompt: input }, config);
 
       const botMessage = {
         sender: "bot",
@@ -64,7 +64,7 @@ const ChatBot = () => {
     >
       {/* Header có icon lịch sử */}
       <View style={styles.header}>
-        <Text style={styles.title}>💬 Chat với AI</Text>
+        <Text style={styles.title}>Chat với AI</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Lịch Sử Chatbot")}>
           <Ionicons name="time-outline" size={28} color="#007AFF" />
         </TouchableOpacity>
